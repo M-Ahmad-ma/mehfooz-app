@@ -10,6 +10,11 @@ import {
   mehfoozNative,
   setLiveCaptureEnabled,
 } from '@/native/mehfoozNative';
+import {
+  geminiApiKey,
+  geminiModel,
+  isGeminiConfigured,
+} from '@/engine/geminiClassifier';
 import { useStore } from '@/store/useStore';
 import type { IncomingNotification, PendingShare } from '@/types';
 
@@ -33,6 +38,15 @@ export function IncomingBridge() {
       setLiveCaptureEnabled(liveMode);
     }
   }, [liveMode]);
+
+  useEffect(() => {
+    if (!isNativeAvailable || !mehfoozNative || !isGeminiConfigured) return;
+    try {
+      mehfoozNative.setBackgroundGeminiConfig(geminiApiKey, geminiModel);
+    } catch {
+      // The static prefilter remains the fallback.
+    }
+  }, []);
 
   useEffect(() => {
     if (!isNativeAvailable || !mehfoozNative) return;

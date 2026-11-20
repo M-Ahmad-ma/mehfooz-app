@@ -1,6 +1,10 @@
 package expo.modules.mehfooznative
 
+import android.Manifest
+import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import expo.modules.kotlin.Promise
@@ -57,8 +61,41 @@ class MehfoozNativeModule : Module() {
       NotificationAccess.open(context)
     }
 
+    AsyncFunction("hasAlertNotificationPermission") {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+          PackageManager.PERMISSION_GRANTED
+      } else {
+        context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+      }
+    }
+
+    Function("requestAlertNotificationPermission") {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        true
+      } else {
+        val activity = appContext.currentActivity
+        when {
+          activity == null -> false
+          activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED -> true
+          else -> {
+            activity.requestPermissions(
+              arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+              7410
+            )
+            true
+          }
+        }
+      }
+    }
+
     Function("setLiveCaptureEnabled") { enabled: Boolean ->
       IncomingStore.setLiveCaptureEnabled(context, enabled)
+    }
+
+    Function("setBackgroundGeminiConfig") { apiKey: String, model: String ->
+      IncomingStore.setBackgroundGeminiConfig(context, apiKey, model)
     }
 
     Function("isLiveCaptureEnabled") {

@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { SectionLabel } from '@/components/SectionLabel';
 import { SettingsRow } from '@/components/SettingsRow';
 import { geminiModel, isGeminiConfigured } from '@/engine/geminiClassifier';
+import { useAlertNotificationPermission } from '@/hooks/useAlertNotificationPermission';
 import { useNotificationAccess } from '@/hooks/useNotificationAccess';
 import { formatDateTime } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
@@ -24,6 +25,7 @@ export default function SettingsScreen() {
   const corrections = useStore((state) => state.corrections);
   const resetDemo = useStore((state) => state.resetDemo);
   const { available, granted, openSettings } = useNotificationAccess();
+  const { granted: alertsGranted, request: requestAlerts } = useAlertNotificationPermission();
 
   const recentCorrections = corrections.slice(0, 3);
 
@@ -98,6 +100,22 @@ export default function SettingsScreen() {
             divider
           />
           <SettingsRow
+            icon="notifications-outline"
+            title="Alert notifications"
+            subtitle={
+              alertsGranted
+                ? 'Mehfooz can alert you when it shields a message.'
+                : 'Allow Android notifications for background alerts.'
+            }
+            right={
+              <Text style={[styles.accessStatus, alertsGranted && styles.accessOn]}>
+                {alertsGranted ? 'ON' : 'OFF'}
+              </Text>
+            }
+            onPress={alertsGranted ? undefined : requestAlerts}
+            divider
+          />
+          <SettingsRow
             icon="shield-checkmark-outline"
             title="Live capture"
             subtitle={
@@ -115,6 +133,7 @@ export default function SettingsScreen() {
                   tapFeedback();
                   setLiveMode(value);
                   setLiveCaptureEnabled(value);
+                  if (value && !alertsGranted) requestAlerts();
                 }}
                 trackColor={{ false: colors.sandDeep, true: colors.pine }}
                 thumbColor={colors.sand}
@@ -152,9 +171,11 @@ export default function SettingsScreen() {
         </View>
         <Text style={styles.smallNote}>
           Android asks for Notification access in a special settings screen. Only message-like
-          notifications are read; screenshots are shared manually. When Gemini is configured, live
-          message text and screenshot transcripts are sent to Google; images and OCR stay on the
-          phone. Local rules always work offline.
+          notifications are read; screenshots are shared manually. Background alerts use Gemini
+          for captured notification text when configured and online; the static prefilter is the
+          offline fallback. The app reclassifies when it opens. When Gemini is configured, live and
+          background message text plus screenshot transcripts are sent to Google; images and OCR
+          stay on the phone.
         </Text>
 
         <SectionLabel>Privacy</SectionLabel>

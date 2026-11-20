@@ -16,7 +16,10 @@ declare class MehfoozNativeModule extends NativeModule<MehfoozNativeModuleEvents
   isNativeAvailable(): boolean;
   hasNotificationAccess(): Promise<boolean>;
   openNotificationAccessSettings(): boolean;
+  hasAlertNotificationPermission(): Promise<boolean>;
+  requestAlertNotificationPermission(): boolean;
   setLiveCaptureEnabled(enabled: boolean): void;
+  setBackgroundGeminiConfig(apiKey: string, model: string): void;
   isLiveCaptureEnabled(): boolean;
   setAllowedPackages(packages: string[]): void;
   getAllowedPackages(): string[];

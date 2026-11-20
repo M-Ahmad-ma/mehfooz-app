@@ -1,12 +1,10 @@
 package expo.modules.mehfooznative
 
 /**
- * A deliberately tiny high-confidence filter for the notification service.
- *
- * The full multilingual classifier lives in JavaScript and runs when the app
- * is alive. This filter exists so obvious threats can still be dismissed from
- * the notification shade when the app is in the background. It errs on the
- * side of catching phrases, not in being a complete classifier.
+ * Offline fallback used by the notification service when native Gemini cannot
+ * run (no key, no network, no notification permission). It is a deliberately
+ * tiny high-confidence phrase list, not a classifier. It errs on the side of
+ * catching phrases, not in being complete.
  */
 object PreFilter {
   private val THREAT_PHRASES = listOf(
@@ -25,7 +23,13 @@ object PreFilter {
     "جان سے",
     "دې ووینم",
     "وژنم",
-    "ستا کور"
+    "ستا کور",
+    "za ba tasara ogoram",
+    "za ba ta sara ogoram",
+    "sta kor",
+    "sta kor pezhanam",
+    "pezhanam",
+    "pazhanam"
   )
 
   private val BLACKMAIL_PHRASES = listOf(

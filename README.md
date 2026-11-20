@@ -16,7 +16,8 @@ reliable stage fallback.
 |---|---|---|
 | Message source | Android `NotificationListenerService` on the installed build, with Notification access; scripted demo feed fallback | Same listener, broader app coverage and Play Store disclosure |
 | Classifier | Local rules + optional Gemini Flash-Lite for live text (direct API, rules fallback) | Fine-tuned on-device multilingual model |
-| Shield | Harmful messages hidden in the app; high-confidence notifications dismissed from the shade; full classifier on app open | Native/on-device model running continuously in the service |
+| Shield | Harmful messages hidden in the app; background Gemini/prefilter can dismiss notifications; full classifier on app open | Native/on-device model running continuously in the service |
+| Background alert | Native Android alert; Gemini checks every captured notification when configured and online; the static prefilter is the offline fallback; app + category, no message text | Same, with a better on-device model |
 | Evidence store | Local AsyncStorage + image files; text and screenshot SHA-256 | Encrypted SQLite, chain-of-custody export |
 | Screenshot check | Android share sheet; ML Kit Latin for Roman Urdu/English; Tesseract `urd`/`pus` for Urdu/Pashto | Better Urdu/Pashto OCR model and confidence-based review |
 | Disguise | In-app header changes to “Notes” | Native launcher icon/name change |
@@ -69,11 +70,13 @@ first.
 
 1. Open **Settings → Live protection**.
 2. Tap **Notification access** and enable Mehfooz in Android’s special access screen.
-3. Turn on **Live capture**.
-4. Send a WhatsApp message from a second phone. The notification is captured, classified, and
+3. Enable **Alert notifications** for the Android 13+ notification prompt. Without it, the
+   original notification is left visible so the user still has context.
+4. Turn on **Live capture**.
+5. Send a WhatsApp message from a second phone. The notification is captured, classified, and
    obvious threats are dismissed from the shade. With a Gemini key in the build, live text is
    classified by Gemini and falls back to local rules on timeout/refusal.
-5. Share a screenshot from WhatsApp, Instagram or the gallery and choose **Mehfooz** in the share
+6. Share a screenshot from WhatsApp, Instagram or the gallery and choose **Mehfooz** in the share
    sheet. OCR stays local; the transcript goes to Gemini when configured.
 
 Web (`npm run web`) is a demo-feed fallback only.
@@ -244,7 +247,12 @@ advice.
 - Send a direct WhatsApp message and a group message from the second phone.
 - Test with WhatsApp message previews on and off.
 - Test the app in the foreground, backgrounded and killed; confirm the queue drains on reopen.
-- Confirm a high-confidence harmful notification is dismissed while the app is closed.
+- With Alert notifications enabled, send a harmful message the prefilter does not know, with the app killed; confirm native Gemini classifies it, dismisses the original and posts the app alert.
+- With Alert notifications enabled, send a prefiltered threat with the app killed; confirm the
+  Mehfooz notification with the app icon appears, tapping opens the flagged feed, and the original
+  notification is gone.
+- Revoke notification permission; confirm the original notification is **not** dismissed, so the
+  user keeps context.
 - Share a screenshot from WhatsApp and the gallery; test Roman Urdu (ML Kit) and Urdu/Pashto
   (Tesseract). Record real OCR accuracy; edit the transcript.
 - Confirm the classifier badge shows Gemini, local rules or fallback correctly.
@@ -263,6 +271,10 @@ Expo Doctor passes; the Kotlin/Gradle build and device tests still need to run o
 - **Settings → Reset demo** clears messages, evidence, corrections, the native capture queue and
   the pending share, and returns to onboarding.
 - OCR, the notification prefilter, the local rules engine, vault and PDF generation are local.
+- Background alerts use native Gemini for every captured notification when configured and online.
+  The static prefilter (now with Romanized Pashto markers) is the offline fallback. Without a key,
+  network or notification permission, only prefiltered messages alert; the original notification
+  stays for the rest so the user has context. The app reclassifies on open.
   Gemini classification requires internet; without a key or network the app uses local rules.
 - The **demo feed** is fully offline and is the recommended stage fallback. Expo Go still fetches
   the JS bundle from Metro at launch.
@@ -286,6 +298,9 @@ Expo Doctor passes; the Kotlin/Gradle build and device tests still need to run o
   it”.
 - Say **“Tesseract Urdu/Pashto is experimental”**; edit-the-transcript is part of the design, not
   a failure.
+- Say **“background alerts use Gemini when online, with a static offline fallback”**. Do not claim
+  every harmful message is detected with 100% accuracy; the model/prefilter can miss context.
+- The app alert contains the app + category only; it never puts the harmful text on the lock screen.
 - Say **“OCR and the notification prefilter are on-device; Gemini receives text only”**, not
   “everything is on-device”.
 - The Gemini key is in the APK. Use a low-quota key, rotate it after the pitch, and never commit

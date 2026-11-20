@@ -1,17 +1,31 @@
 package expo.modules.mehfooznative
 
+import android.Manifest
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Person
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import java.util.UUID
+import java.util.concurrent.Executors
 
 class MehfoozNotificationService : NotificationListenerService() {
+  private val worker = Executors.newSingleThreadExecutor()
+
   companion object {
     private const val TAG = "MehfoozNotify"
+    private const val CHANNEL_ID = "mehfooz_alerts"
+    private const val CHANNEL_NAME = "Mehfooz alerts"
+    private const val ALERT_ID = 7401
 
     @Volatile
     private var instance: MehfoozNotificationService? = null
@@ -31,20 +45,24 @@ class MehfoozNotificationService : NotificationListenerService() {
   override fun onCreate() {
     super.onCreate()
     instance = this
+    ensureAlertChannel()
   }
 
   override fun onDestroy() {
     instance = null
+    worker.shutdownNow()
     super.onDestroy()
   }
 
   override fun onNotificationPosted(sbn: StatusBarNotification?) {
     if (sbn == null) return
 
-    try {
-      process(sbn)
-    } catch (error: Exception) {
-      Log.w(TAG, "Could not process notification", error)
+    worker.execute {
+      try {
+        process(sbn)
+      } catch (error: Exception) {
+        Log.w(TAG, "Could not process notification", error)
+      }
     }
   }
 
@@ -70,21 +88,42 @@ class MehfoozNotificationService : NotificationListenerService() {
     val entries = parseEntries(sbn, notification, appLabel, fallbackSender)
     if (entries.isEmpty()) return
 
+    val canAlert = canPostAlerts()
     var shouldCancel = false
+    var alertEntry: NotificationEntry? = null
     val queued = mutableListOf<NotificationEntry>()
 
     for (entry in entries) {
       val marker = "${entry.key}|${entry.text.hashCode()}|${entry.postedAt}"
       if (!IncomingStore.markSeen(this, marker)) continue
 
-      val prefilterCategory = PreFilter.categoryFor(entry.text)
-      val finalEntry = if (prefilterCategory != null) {
-        entry.copy(prefiltered = true, prefilterCategory = prefilterCategory)
+      // Prefer Gemini when alerts can actually be posted. The static filter is
+      // the offline fallback only, so a safe message that happens to contain a
+      // phrase like "sta kor" is not dismissed without context.
+      val gemini = if (canAlert) BackgroundGemini.classify(this, entry.text) else null
+      var harmfulCategory = when {
+        gemini != null -> gemini.label.takeIf { it != "safe" }
+        else -> PreFilter.categoryFor(entry.text)
+      }
+
+      if (gemini != null) {
+        Log.i(TAG, "Background Gemini label=${gemini.label} confidence=${gemini.confidence}")
+      }
+
+      if (harmfulCategory != null && gemini == null) {
+        Log.i(TAG, "Offline prefilter category=$harmfulCategory")
+      }
+
+      val finalEntry = if (harmfulCategory != null) {
+        entry.copy(prefiltered = true, prefilterCategory = harmfulCategory)
       } else {
         entry
       }
 
-      if (prefilterCategory != null) shouldCancel = true
+      if (harmfulCategory != null && canAlert) {
+        shouldCancel = true
+        alertEntry = finalEntry
+      }
       IncomingStore.addPending(this, finalEntry)
       queued.add(finalEntry)
     }
@@ -97,11 +136,128 @@ class MehfoozNotificationService : NotificationListenerService() {
       } catch (error: Exception) {
         Log.w(TAG, "Could not dismiss harmful notification", error)
       }
+      alertEntry?.let { showShieldAlert(it) }
     }
 
     for (entry in queued) {
       MehfoozNativeModule.emitNotification(entry.toMap())
     }
+  }
+
+  private fun canPostAlerts(): Boolean {
+    if (
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+      checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    ) {
+      return false
+    }
+
+    val manager = getSystemService(NotificationManager::class.java)
+    if (!manager.areNotificationsEnabled()) return false
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val channel = manager.getNotificationChannel(CHANNEL_ID) ?: return false
+      if (channel.importance == NotificationManager.IMPORTANCE_NONE) return false
+    }
+
+    return true
+  }
+
+  private fun ensureAlertChannel() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+
+    val manager = getSystemService(NotificationManager::class.java)
+    if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+
+    val channel = NotificationChannel(
+      CHANNEL_ID,
+      CHANNEL_NAME,
+      NotificationManager.IMPORTANCE_HIGH
+    ).apply {
+      description = "Alerts when Mehfooz shields a harmful message"
+      enableVibration(true)
+      setShowBadge(true)
+    }
+
+    manager.createNotificationChannel(channel)
+  }
+
+  private fun showShieldAlert(entry: NotificationEntry) {
+    if (
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+      checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    ) {
+      return
+    }
+
+    val manager = getSystemService(NotificationManager::class.java)
+    if (!manager.areNotificationsEnabled()) return
+
+    ensureAlertChannel()
+
+    val kind = when (entry.prefilterCategory) {
+      "threat" -> "Threat"
+      "blackmail" -> "Blackmail"
+      "sexual" -> "Sexual harassment"
+      "abusive" -> "Abusive message"
+      else -> "Harmful message"
+    }
+    val source = entry.appLabel.ifBlank { "an app" }
+
+    val largeIcon = try {
+      val iconId = applicationInfo.icon
+      if (iconId != 0) BitmapFactory.decodeResource(resources, iconId) else null
+    } catch (_: Exception) {
+      null
+    }
+
+    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+      addFlags(
+        Intent.FLAG_ACTIVITY_NEW_TASK or
+          Intent.FLAG_ACTIVITY_CLEAR_TOP or
+          Intent.FLAG_ACTIVITY_SINGLE_TOP
+      )
+    }
+
+    val contentIntent = launchIntent?.let {
+      PendingIntent.getActivity(
+        this,
+        ALERT_ID,
+        it,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      )
+    }
+
+    val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      Notification.Builder(this, CHANNEL_ID)
+    } else {
+      Notification.Builder(this)
+    }
+
+    builder
+      .setSmallIcon(R.drawable.mehfooz_notification)
+      .setContentTitle("Mehfooz shielded a harmful message")
+      .setContentText("$kind from $source · Tap to review")
+      .setStyle(
+        Notification.BigTextStyle().bigText(
+          "$kind from $source was hidden and saved in the evidence vault. Tap to review."
+        )
+      )
+      .setAutoCancel(true)
+      .setVisibility(Notification.VISIBILITY_PRIVATE)
+      .setCategory(Notification.CATEGORY_MESSAGE)
+      .setOnlyAlertOnce(false)
+      .setShowWhen(true)
+      .setWhen(System.currentTimeMillis())
+      .setColor(Color.parseColor("#0F3D33"))
+
+    if (largeIcon != null) builder.setLargeIcon(largeIcon)
+    if (contentIntent != null) builder.setContentIntent(contentIntent)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+      builder.setPriority(Notification.PRIORITY_HIGH)
+    }
+
+    manager.notify(ALERT_ID, builder.build())
   }
 
   @Suppress("DEPRECATION")

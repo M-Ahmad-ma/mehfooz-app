@@ -6,14 +6,17 @@ The app is a prototype. The story is real. Keep the two separate.
 
 1. Put a low-quota Gemini key in `.env` as `EXPO_PUBLIC_GEMINI_API_KEY` and build the **release
    APK**. Expo Go is rehearsal-only; it cannot use the notification listener, share target or OCR.
-2. Open **Settings → Live protection**, tap **Notification access**, enable Mehfooz, and turn
-   **Live capture** on. Confirm the AI classification row says **ON**.
+2. Open **Settings → Live protection**, tap **Notification access**, enable Mehfooz, enable
+   **Alert notifications**, and turn **Live capture** on. Confirm the AI classification row says
+   **ON**.
 3. Send one WhatsApp message from the second phone and confirm it appears in the shield feed with a
    Gemini or local-fallback classifier badge. Share one screenshot into Mehfooz and confirm OCR +
    text classification work.
 4. Reset the demo: **Settings → Reset demo → Reset**, then walk through onboarding once. Re-enable
    live capture if you reset after step 3.
-5. Run the full 60 seconds once on Wi-Fi. The demo feed does not need the network; Gemini does.
+5. With the app killed, send one prefiltered threat from the second phone. Confirm the Mehfooz
+   notification with the app icon appears; tap it and confirm the flagged feed opens. Then run the
+   full 60 seconds on Wi-Fi. The demo feed does not need the network; Gemini does.
 6. Record a 60-second screen capture and keep it on the laptop and the phone.
 7. Keep a low-quota key in the build, and rotate it after the pitch. Never commit `.env`.
 
@@ -69,6 +72,7 @@ message passed” while it is visible. Do not expect a card for it.
 | Report button says “Select evidence to continue” | Go to **Vault** and check the corrected record, or simulate another harmful message. |
 | Wi-Fi is down | Gemini cannot run; local rules take over automatically. Use the scripted feed and say “local fallback”; do not troubleshoot on stage. |
 | Gemini is slow or refuses | The source badge shows “Local rules · Gemini fallback”; continue with that result. |
+| No background alert appears | Check Settings → Alert notifications and internet. If offline, only prefiltered messages alert; otherwise Gemini should classify the captured text. Do not troubleshoot on stage. |
 
 ## Lines you can defend
 
@@ -83,6 +87,9 @@ message passed” while it is visible. Do not expect a card for it.
 - “The vault is local and hash-sealed. Encrypted storage is the next milestone.”
 - “The notification prefilter and OCR run on the phone. Gemini receives only text, never the
   screenshot image. Local rules are the fallback.”
+- “When the app is closed and the native prefilter catches a high-confidence threat, Mehfooz posts
+  its own alert with the app icon. Tap it to open the flagged feed. It shows only the app and
+  category, never the message text.”
 - “The Gemini key is in this prototype APK; we use a low-quota key and rotate it after the pitch.
   Production needs a proxy or an on-device model.”
 - “Screenshots are shared explicitly through the Android share sheet. OCR runs on the phone; ML Kit
@@ -101,8 +108,10 @@ message passed” while it is visible. Do not expect a card for it.
 > Android boundary, not a shortcut.
 
 **What happens when the app is closed?**
-> A small high-confidence pre-filter dismisses obvious threats; the notification text is queued. The
-> full classifier runs and the evidence is sealed when the app opens.
+> While the app is closed, the native service checks each captured notification with Gemini when
+> configured and online. The static prefilter (including Romanized Pashto markers) is the offline
+> fallback. Harmful results are queued and posted as a Mehfooz notification with the app icon and
+> category. If classification cannot run, the original notification stays so the user has context.
 
 **Is the AI real?**
 > The pipeline is real: normalization, weighted signals, context handling, confidence and a
@@ -153,6 +162,7 @@ message passed” while it is visible. Do not expect a card for it.
 - “The model is trained and accurate on Pashto.”
 - “Tesseract Urdu/Pashto is accurate” — it is experimental and the transcript is editable.
 - Any “100% accurate” claim — the 160-message set gives the rules baseline 61.3%; the Gemini eval is separate.
+- “Every harmful message alerts with 100% accuracy while closed” — Gemini covers captured notifications when online; the static prefilter is the limited offline fallback.
 - “It is fully encrypted.”
 - “It is available on iPhone.”
 - “Everything runs on-device” — OCR/prefilter/rules are local; Gemini receives text.

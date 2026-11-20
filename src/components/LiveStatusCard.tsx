@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { useAlertNotificationPermission } from '@/hooks/useAlertNotificationPermission';
 import { useNotificationAccess } from '@/hooks/useNotificationAccess';
 import { tapFeedback } from '@/lib/haptics';
 import { useStore } from '@/store/useStore';
@@ -8,6 +9,7 @@ import { colors, fonts, radius } from '@/theme';
 
 export function LiveStatusCard() {
   const { available, granted, openSettings } = useNotificationAccess();
+  const { granted: alertsGranted, request: requestAlerts } = useAlertNotificationPermission();
   const liveMode = useStore((state) => state.liveMode);
   const setLiveMode = useStore((state) => state.setLiveMode);
 
@@ -71,6 +73,7 @@ export function LiveStatusCard() {
         onValueChange={(value) => {
           tapFeedback();
           setLiveMode(value);
+          if (value && !alertsGranted) requestAlerts();
         }}
         trackColor={{ false: colors.sandDeep, true: colors.pine }}
         thumbColor={colors.sand}

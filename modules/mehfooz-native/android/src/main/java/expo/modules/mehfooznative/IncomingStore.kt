@@ -75,6 +75,8 @@ object IncomingStore {
   private const val KEY_LIVE = "live_capture_enabled"
   private const val KEY_ALLOWED = "allowed_packages"
   private const val KEY_PENDING_SHARE = "pending_share"
+  private const val KEY_BG_GEMINI_API = "background_gemini_api_key"
+  private const val KEY_BG_GEMINI_MODEL = "background_gemini_model"
   private const val MAX_PENDING = 100
   private const val MAX_SEEN = 300
 
@@ -205,6 +207,22 @@ object IncomingStore {
   fun clearPendingShare(context: Context) {
     prefs(context).edit().remove(KEY_PENDING_SHARE).apply()
   }
+
+  @Synchronized
+  fun setBackgroundGeminiConfig(context: Context, apiKey: String, model: String) {
+    prefs(context).edit()
+      .putString(KEY_BG_GEMINI_API, apiKey.trim())
+      .putString(KEY_BG_GEMINI_MODEL, model.trim())
+      .apply()
+  }
+
+  @Synchronized
+  fun getBackgroundGeminiApiKey(context: Context): String =
+    prefs(context).getString(KEY_BG_GEMINI_API, "").orEmpty()
+
+  @Synchronized
+  fun getBackgroundGeminiModel(context: Context): String =
+    prefs(context).getString(KEY_BG_GEMINI_MODEL, "gemini-3.5-flash-lite").orEmpty()
 
   @Synchronized
   fun resetCaptureState(context: Context) {

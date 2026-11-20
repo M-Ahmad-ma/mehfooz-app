@@ -11,6 +11,7 @@ const CONFIGURED_MODEL = (process.env.EXPO_PUBLIC_GEMINI_MODEL || DEFAULT_MODEL)
 
 export const isGeminiConfigured = API_KEY.trim().length > 10;
 export const geminiModel = CONFIGURED_MODEL;
+export const geminiApiKey = API_KEY;
 
 function zeroScores(): ClassifierResult['scores'] {
   return { threat: 0, blackmail: 0, sexual: 0, abusive: 0 };
