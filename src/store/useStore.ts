@@ -8,11 +8,21 @@ import { getScreenshotSample } from '../data/screenshots';
 import { classify } from '../engine/classify';
 import { sealEvidence } from '../lib/hash';
 import { makeId } from '../lib/id';
-import type { Category, Correction, Evidence, Message } from '../types';
+import type {
+  Category,
+  Correction,
+  Evidence,
+  IncomingNotification,
+  Message,
+  PendingShare,
+  SharedScreenshotInput,
+} from '../types';
 
 type StoreState = {
   hasOnboarded: boolean;
   disguisedMode: boolean;
+  liveMode: boolean;
+  pendingShare: PendingShare | null;
   messages: Message[];
   evidence: Evidence[];
   corrections: Correction[];
@@ -21,13 +31,26 @@ type StoreState = {
   seedInbox: () => void;
   addScenario: (scenarioId: string) => Promise<Message | null>;
   addScreenshot: (sampleId: string) => Promise<Message | null>;
+  addIncoming: (payload: IncomingNotification) => Promise<Message | null>;
+  addSharedScreenshot: (input: SharedScreenshotInput) => Promise<Message | null>;
   markSafe: (messageId: string) => void;
   toggleInclude: (evidenceId: string) => void;
   setDisguisedMode: (value: boolean) => void;
+  setLiveMode: (value: boolean) => void;
+  setPendingShare: (share: PendingShare | null) => void;
+  clearPendingShare: () => void;
   resetDemo: () => void;
 };
 
-async function createEvidence(message: Message): Promise<Evidence> {
+type EvidenceImage = {
+  imagePath?: string;
+  imageSha256?: string;
+  imageMimeType?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+};
+
+async function createEvidence(message: Message, image?: EvidenceImage): Promise<Evidence> {
   const base = {
     id: makeId('ev'),
     messageId: message.id,
@@ -40,10 +63,27 @@ async function createEvidence(message: Message): Promise<Evidence> {
     addedAt: new Date().toISOString(),
     includeInReport: true,
     source: message.source,
+    appLabel: message.appLabel,
+    ...(image ?? {}),
   };
 
   const sha256 = await sealEvidence(base);
   return { ...base, sha256 };
+}
+
+function detectLanguage(text: string): Message['language'] {
+  if (/[\u0600-\u06FF]/.test(text)) {
+    // Pashto-specific letters: ښ ږ ډ ټ ړ څ ځ ڼ ې ۍ
+    return /[ښږډټړڅځڼېۍ]/.test(text) ? 'ps' : 'ur';
+  }
+
+  const romanUrdu =
+    /\b(tum|tumhe|tumhein|yaar|hai|nahi|kya|bhej|kar|mera|meri|tera|aaj|kal|acha|hoon|raha|rahi)\b/i;
+  const english =
+    /\b(the|you|your|please|hello|hi|meeting|today|tomorrow|thanks|message|call|will|not|this|that|from|with)\b/i;
+
+  if (!romanUrdu.test(text) && english.test(text)) return 'en';
+  return 'roman-ur';
 }
 
 function resultFromScenario(scenario: DemoScenario) {
@@ -96,6 +136,8 @@ export const useStore = create<StoreState>()(
     (set, get) => ({
       hasOnboarded: false,
       disguisedMode: false,
+      liveMode: false,
+      pendingShare: null,
       messages: [],
       evidence: [],
       corrections: [],
@@ -178,6 +220,82 @@ export const useStore = create<StoreState>()(
         return message;
       },
 
+      addIncoming: async (payload) => {
+        const existing = get().messages.find((message) => message.externalId === payload.id);
+        if (existing) return existing;
+
+        const text = payload.text.trim();
+        if (!text) return null;
+
+        const result = classify(text);
+        const harmful = result.label !== 'safe';
+        const message: Message = {
+          id: makeId('msg'),
+          externalId: payload.id,
+          sender: payload.sender.trim() || payload.appLabel || 'Unknown sender',
+          text,
+          language: detectLanguage(text),
+          receivedAt: new Date(payload.postedAt > 0 ? payload.postedAt : Date.now()).toISOString(),
+          category: result.label,
+          confidence: result.confidence,
+          reasons: result.reasons,
+          hidden: harmful,
+          source: 'notification',
+          appLabel: payload.appLabel || undefined,
+        };
+
+        // Create the evidence before committing the message so a storage or
+        // crypto failure leaves the queue intact for a retry.
+        const evidence = harmful ? await createEvidence(message) : null;
+
+        const raced = get().messages.find((item) => item.externalId === payload.id);
+        if (raced) return raced;
+
+        set((state) => ({
+          messages: [message, ...state.messages],
+          evidence: evidence ? [evidence, ...state.evidence] : state.evidence,
+        }));
+
+        return message;
+      },
+
+      addSharedScreenshot: async (input) => {
+        const text = input.text.trim();
+        if (!text) return null;
+
+        const result = classify(text);
+        if (result.label === 'safe') return null;
+
+        const message: Message = {
+          id: makeId('msg'),
+          sender: 'Shared screenshot',
+          text,
+          language: input.language,
+          receivedAt: new Date().toISOString(),
+          category: result.label,
+          confidence: result.confidence,
+          reasons: result.reasons,
+          hidden: true,
+          source: 'screenshot',
+          appLabel: 'Shared image',
+        };
+
+        const evidence = await createEvidence(message, {
+          imagePath: input.imagePath,
+          imageSha256: input.imageSha256,
+          imageMimeType: input.imageMimeType,
+          imageWidth: input.imageWidth,
+          imageHeight: input.imageHeight,
+        });
+
+        set((state) => ({
+          messages: [message, ...state.messages],
+          evidence: [evidence, ...state.evidence],
+        }));
+
+        return message;
+      },
+
       markSafe: (messageId) => {
         const message = get().messages.find((item) => item.id === messageId);
         if (!message || message.category === 'safe' || message.correctedTo === 'safe') return;
@@ -213,10 +331,18 @@ export const useStore = create<StoreState>()(
 
       setDisguisedMode: (value) => set({ disguisedMode: value }),
 
+      setLiveMode: (value) => set({ liveMode: value }),
+
+      setPendingShare: (share) => set({ pendingShare: share }),
+
+      clearPendingShare: () => set({ pendingShare: null }),
+
       resetDemo: () => {
         set({
           hasOnboarded: false,
           disguisedMode: false,
+          liveMode: false,
+          pendingShare: null,
           messages: [],
           evidence: [],
           corrections: [],
@@ -229,6 +355,7 @@ export const useStore = create<StoreState>()(
       partialize: (state) => ({
         hasOnboarded: state.hasOnboarded,
         disguisedMode: state.disguisedMode,
+        liveMode: state.liveMode,
         messages: state.messages,
         evidence: state.evidence,
         corrections: state.corrections,

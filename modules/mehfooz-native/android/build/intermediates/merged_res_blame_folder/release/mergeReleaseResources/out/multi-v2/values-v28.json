@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "expo.modules.mehfooznative.mehfooz-native-release-20:/values-v28/values-v28.xml",
+            "map": [
+                {
+                    "source": "/home/muhammad-ahmad/.gradle/caches/9.4.1/transforms/46ceb5910931c5243ef8956a53dd2303/transformed/appcompat-1.6.1/res/values-v28/values-v28.xml",
+                    "from": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,397",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,392,584"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "expo.modules.mehfooznative.mehfooz-native-mergeReleaseResources-18:/values-v28/values-v28.xml",
+            "map": [
+                {
+                    "source": "/home/muhammad-ahmad/.gradle/caches/9.4.1/transforms/46ceb5910931c5243ef8956a53dd2303/transformed/appcompat-1.6.1/res/values-v28/values-v28.xml",
+                    "from": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,397",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,392,584"
+                    }
+                }
+            ]
+        }
+    ]
+}

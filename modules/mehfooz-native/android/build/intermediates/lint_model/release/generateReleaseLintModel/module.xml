@@ -1,0 +1,19 @@
+<lint-module
+    format="1"
+    dir="/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android"
+    name=":mehfooz-native"
+    type="LIBRARY"
+    maven="expo.modules.mehfooznative:mehfooz-native:0.1.0"
+    agpVersion="9.2.1"
+    buildFolder="build"
+    bootClassPath="/home/muhammad-ahmad/Android/Sdk/platforms/android-37.0/android.jar:/home/muhammad-ahmad/Android/Sdk/build-tools/36.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-37.0"
+    neverShrinking="true"
+    highlightGradualR8Api="false">
+  <lintOptions
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>

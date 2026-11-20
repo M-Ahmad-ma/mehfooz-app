@@ -3,6 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,7 +22,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { SettingsRow } from '@/components/SettingsRow';
 import { Toast } from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
-import { formatDateTime, sourceLabel } from '@/lib/format';
+import { fileUri, formatDateTime, sourceLabel } from '@/lib/format';
 import { canonicalEvidenceString, verifyEvidence } from '@/lib/hash';
 import { successFeedback, warnFeedback } from '@/lib/haptics';
 import { useStore } from '@/store/useStore';
@@ -97,7 +98,28 @@ export default function EvidenceDetailScreen() {
 
         <ConfidenceBar category={item.category} confidence={item.confidence} />
 
+        {item.imagePath ? (
+          <View style={styles.imageCard}>
+            <Image
+              source={{ uri: fileUri(item.imagePath) }}
+              style={styles.evidenceImage}
+              resizeMode="contain"
+            />
+            {item.imageSha256 ? (
+              <View style={styles.imageHashRow}>
+                <Text style={styles.imageHashLabel}>IMAGE SHA-256</Text>
+                <Text style={styles.imageHash} selectable>
+                  {item.imageSha256}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         <View style={styles.messageCard}>
+          <Text style={styles.messageLabel}>
+            {item.source === 'screenshot' ? 'OCR transcript' : 'Original message'}
+          </Text>
           <Text style={[styles.messageText, scriptTextStyle(item.language)]} selectable>
             {item.text}
           </Text>
@@ -120,6 +142,9 @@ export default function EvidenceDetailScreen() {
           <HashSeal hash={item.sha256} />
           <Text style={styles.integrityBody}>
             Computed on this device from the original text, sender, timestamp and category.
+            {item.imagePath
+              ? ' The screenshot image is sealed separately with its own SHA-256.'
+              : ''}
           </Text>
           <Text style={styles.fullHash} selectable>
             {item.sha256}
@@ -201,7 +226,7 @@ export default function EvidenceDetailScreen() {
           <SettingsRow
             icon="phone-portrait-outline"
             title="Source"
-            subtitle={sourceLabel(item.source)}
+            subtitle={sourceLabel(item.source, item.appLabel)}
           />
         </View>
 
@@ -256,6 +281,37 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: colors.muted,
   },
+  imageCard: {
+    marginTop: 14,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.lineSoft,
+    overflow: 'hidden',
+  },
+  evidenceImage: {
+    width: '100%',
+    height: 220,
+    backgroundColor: colors.sandDeep,
+  },
+  imageHashRow: {
+    padding: 11,
+    gap: 3,
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
+  },
+  imageHashLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 8.5,
+    letterSpacing: 1.2,
+    color: colors.muted,
+  },
+  imageHash: {
+    fontFamily: 'monospace',
+    fontSize: 9,
+    lineHeight: 14,
+    color: colors.mutedDark,
+  },
   messageCard: {
     marginTop: 14,
     backgroundColor: colors.card,
@@ -263,6 +319,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.lineSoft,
     padding: 15,
+    gap: 7,
+  },
+  messageLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: colors.muted,
   },
   messageText: {
     fontFamily: fonts.medium,

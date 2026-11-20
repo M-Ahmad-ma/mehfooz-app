@@ -78,8 +78,14 @@ export function percent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
-export function sourceLabel(source: string): string {
+export function sourceLabel(source: string, appLabel?: string): string {
   if (source === 'screenshot') return 'Shared screenshot';
-  if (source === 'notification') return 'Notification';
+  if (source === 'notification') {
+    return appLabel ? `Notification · ${appLabel}` : 'Message notification';
+  }
   return 'Demo feed';
+}
+
+export function fileUri(path: string): string {
+  return path.startsWith('file://') ? path : `file://${path}`;
 }

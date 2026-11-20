@@ -134,7 +134,7 @@ export function ReviewSheet({
           label="Received"
           value={formatDateTime(message.receivedAt)}
         />
-        <MetaRow icon="phone-portrait-outline" label="Source" value={sourceLabel(message.source)} />
+        <MetaRow icon="phone-portrait-outline" label="Source" value={sourceLabel(message.source, message.appLabel)} />
       </View>
 
       {evidence ? (

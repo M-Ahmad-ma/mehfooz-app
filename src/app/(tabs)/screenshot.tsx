@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,8 +20,10 @@ import { colors, fonts, radius, scriptTextStyle } from '@/theme';
 type Phase = 'scanning' | 'done';
 
 export default function ScreenshotScreen() {
+  const router = useRouter();
   const addScreenshot = useStore((state) => state.addScreenshot);
   const evidence = useStore((state) => state.evidence);
+  const pendingShare = useStore((state) => state.pendingShare);
   const { toast, show } = useToast();
 
   const [active, setActive] = useState<ScreenshotSample | null>(null);
@@ -122,9 +125,28 @@ export default function ScreenshotScreen() {
             </Text>
           </View>
           <View style={styles.simPill}>
-            <Text style={styles.simText}>SIMULATED</Text>
+            <Text style={styles.simText}>SHARE SHEET</Text>
           </View>
         </View>
+
+        {pendingShare ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Review shared screenshot"
+            onPress={() => router.push('/shared-screenshot')}
+            style={({ pressed }) => [styles.sharedCard, pressed && styles.pressed]}>
+            <View style={styles.sharedIcon}>
+              <Ionicons name="image" size={18} color={colors.pine} />
+            </View>
+            <View style={styles.sharedText}>
+              <Text style={styles.sharedTitle}>Shared screenshot ready</Text>
+              <Text style={styles.sharedBody}>
+                Review the image, run on-device OCR, and seal it as evidence.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+          </Pressable>
+        ) : null}
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Bundled samples</Text>
@@ -167,8 +189,8 @@ export default function ScreenshotScreen() {
         <View style={styles.note}>
           <Ionicons name="information-circle-outline" size={14} color={colors.muted} />
           <Text style={styles.noteText}>
-            Prototype limitation: OCR is simulated on these bundled samples. Production will run
-            ML Kit text recognition on images shared to the app.
+            Bundled samples use simulated OCR. Shared screenshots use ML Kit Latin or Tesseract
+            Urdu/Pashto on the installed build; edit the transcript before sealing.
           </Text>
         </View>
       </ScrollView>
@@ -316,6 +338,40 @@ const styles = StyleSheet.create({
     fontSize: 7,
     letterSpacing: 1,
     color: colors.muted,
+  },
+  sharedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.safeSoft,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#CDE5DA',
+    padding: 12,
+    marginTop: 10,
+  },
+  sharedIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sharedText: {
+    flex: 1,
+    gap: 2,
+  },
+  sharedTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+    color: colors.safe,
+  },
+  sharedBody: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    lineHeight: 14,
+    color: colors.mutedDark,
   },
   sectionRow: {
     flexDirection: 'row',

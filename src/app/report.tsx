@@ -20,6 +20,7 @@ const INCLUDED_ITEMS = [
   'Incident summary with date range and senders',
   'Original text, sender and timestamp for every record',
   'Full SHA-256 digest and canonical string per record',
+  'Screenshot thumbnail and image SHA-256 for shared images',
   'NCCIA complaint steps, portal and helpline',
   'Integrity note, PECA reference and legal disclaimer',
 ];

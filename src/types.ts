@@ -16,6 +16,10 @@ export type Message = {
   hidden: boolean;
   correctedTo?: Category;
   source: MessageSource;
+  /** Human-readable source app, e.g. WhatsApp or Instagram. */
+  appLabel?: string;
+  /** Native notification id, used to deduplicate queued captures. */
+  externalId?: string;
 };
 
 export type Evidence = {
@@ -31,6 +35,13 @@ export type Evidence = {
   addedAt: string;
   includeInReport: boolean;
   source: MessageSource;
+  appLabel?: string;
+  /** Shared screenshot evidence. */
+  imagePath?: string;
+  imageSha256?: string;
+  imageMimeType?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 };
 
 export type Correction = {
@@ -39,4 +50,48 @@ export type Correction = {
   from: Category;
   to: Category;
   at: string;
+};
+
+/** Payload emitted by the Android notification listener / queue. */
+export type IncomingNotification = {
+  id: string;
+  appPackage: string;
+  appLabel: string;
+  sender: string;
+  text: string;
+  postedAt: number;
+  key: string;
+  prefiltered: boolean;
+  prefilterCategory?: string;
+};
+
+/** A screenshot shared into the app through the Android share sheet. */
+export type PendingShare = {
+  path: string;
+  mimeType: string;
+  receivedAt: number;
+};
+
+export type OcrResult = {
+  text: string;
+  engine: 'mlkit' | 'tesseract' | string;
+  confidence?: number;
+};
+
+export type ImagePayload = {
+  base64: string;
+  mimeType: string;
+  sha256: string;
+  width: number;
+  height: number;
+};
+
+export type SharedScreenshotInput = {
+  text: string;
+  language: Language;
+  imagePath: string;
+  imageSha256: string;
+  imageMimeType: string;
+  imageWidth: number;
+  imageHeight: number;
 };

@@ -7,10 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/BrandMark';
 import { EmptyState } from '@/components/EmptyState';
+import { LiveStatusCard } from '@/components/LiveStatusCard';
 import { MessageCard } from '@/components/MessageCard';
 import { ReviewSheet } from '@/components/ReviewSheet';
 import { SimulateSheet } from '@/components/SimulateSheet';
 import { Toast } from '@/components/Toast';
+import { useNotificationAccess } from '@/hooks/useNotificationAccess';
 import { useToast } from '@/hooks/useToast';
 import { successFeedback, tapFeedback, warnFeedback } from '@/lib/haptics';
 import { useStore } from '@/store/useStore';
@@ -22,8 +24,12 @@ export default function ShieldScreen() {
   const evidence = useStore((state) => state.evidence);
   const corrections = useStore((state) => state.corrections);
   const disguisedMode = useStore((state) => state.disguisedMode);
+  const liveMode = useStore((state) => state.liveMode);
   const addScenario = useStore((state) => state.addScenario);
   const markSafe = useStore((state) => state.markSafe);
+  const { available, granted } = useNotificationAccess();
+
+  const live = available && granted && liveMode;
 
   const [simulateOpen, setSimulateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -117,13 +123,15 @@ export default function ShieldScreen() {
             <View style={styles.statusDot} />
             <Text style={styles.statusText}>SHIELD ACTIVE</Text>
             <View style={styles.demoPill}>
-              <Text style={styles.demoText}>DEMO</Text>
+              <Text style={styles.demoText}>{live ? 'LIVE' : 'DEMO'}</Text>
             </View>
           </View>
 
           <Text style={styles.heroTitle}>Protection is active</Text>
           <Text style={styles.heroBody}>
-            Screening this demo feed for harassment in Urdu, Roman Urdu and Pashto.
+            {live
+              ? 'Screening live message notifications and the demo feed in Urdu, Roman Urdu and Pashto.'
+              : 'Screening this demo feed for harassment in Urdu, Roman Urdu and Pashto.'}
           </Text>
 
           <View style={styles.statsRow}>
@@ -158,16 +166,18 @@ export default function ShieldScreen() {
           </Pressable>
         </LinearGradient>
 
+        <LiveStatusCard />
+
         <View style={styles.sectionRow}>
           <View>
             <Text style={styles.sectionTitle}>Demo inbox</Text>
             <Text style={styles.sectionSub}>
-              {messages.length} {messages.length === 1 ? 'message' : 'messages'} in the scripted feed
+              {messages.length} {messages.length === 1 ? 'message' : 'messages'} in the feed
             </Text>
           </View>
           <View style={styles.livePill}>
             <View style={styles.liveDot} />
-            <Text style={styles.liveText}>SCRIPTED</Text>
+            <Text style={styles.liveText}>{live ? 'LIVE + DEMO' : 'SCRIPTED'}</Text>
           </View>
         </View>
 
@@ -196,8 +206,7 @@ export default function ShieldScreen() {
         <View style={styles.footnote}>
           <Ionicons name="information-circle-outline" size={14} color={colors.muted} />
           <Text style={styles.footnoteText}>
-            Scripted demo feed. Production reads Android notifications and shared screenshots with
-            the user’s permission.
+            Demo and live captures stay on this phone. The scripted feed remains for rehearsal.
           </Text>
         </View>
       </ScrollView>

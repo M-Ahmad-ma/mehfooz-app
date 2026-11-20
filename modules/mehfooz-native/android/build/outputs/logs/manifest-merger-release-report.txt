@@ -1,0 +1,62 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:1:1-27:12
+INJECTED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:1:1-27:12
+	package
+		INJECTED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:1:11-69
+application
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:2:3-26:17
+service#expo.modules.mehfooznative.MehfoozNotificationService
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:3:5-11:15
+	android:label
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:6:7-37
+	android:exported
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:5:7-30
+	android:permission
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:7:7-81
+	android:name
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:4:7-75
+intent-filter#action:name:android.service.notification.NotificationListenerService
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:8:7-10:23
+action#android.service.notification.NotificationListenerService
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:9:9-91
+	android:name
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:9:17-88
+activity#expo.modules.mehfooznative.ShareActivity
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:13:5-25:16
+	android:excludeFromRecents
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:16:7-40
+	android:launchMode
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:18:7-37
+	android:noHistory
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:17:7-31
+	android:exported
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:15:7-30
+	android:theme
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:19:7-66
+	android:name
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:14:7-62
+intent-filter#action:name:android.intent.action.SEND+category:name:android.intent.category.DEFAULT+data:mimeType:image/*
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:20:7-24:23
+action#android.intent.action.SEND
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:21:9-61
+	android:name
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:21:17-58
+category#android.intent.category.DEFAULT
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:22:9-68
+	android:name
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:22:19-65
+data
+ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:23:9-44
+	android:mimeType
+		ADDED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:23:15-41
+uses-sdk
+INJECTED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml
+INJECTED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml

@@ -3,7 +3,7 @@ import { categoryMeta } from '../theme';
 import type { Evidence } from '../types';
 
 import { canonicalEvidenceString } from './canonical';
-import { formatDate, formatDateRange, formatDateTime, shortHash } from './format';
+import { formatDate, formatDateRange, formatDateTime, shortHash, sourceLabel } from './format';
 
 function escapeHtml(value: string): string {
   return value
@@ -41,7 +41,10 @@ export function reportSummary(items: Evidence[]) {
   };
 }
 
-export function buildReportHtml(items: Evidence[]): string {
+export type ReportImage = { base64: string; mimeType: string };
+export type ReportImages = Record<string, ReportImage>;
+
+export function buildReportHtml(items: Evidence[], images: ReportImages = {}): string {
   const sorted = [...items].sort(
     (a, b) => new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime(),
   );
@@ -66,12 +69,14 @@ export function buildReportHtml(items: Evidence[]): string {
           </div>
           <div class="meta-row">
             <span><strong>Sender:</strong> ${escapeHtml(item.sender)}</span>
-            <span><strong>Source:</strong> ${item.source === 'screenshot' ? 'Shared screenshot' : 'Demo message feed'}</span>
+            <span><strong>Source:</strong> ${escapeHtml(sourceLabel(item.source, item.appLabel))}</span>
             <span><strong>Confidence:</strong> ${Math.round(item.confidence * 100)}%</span>
           </div>
+          ${images[item.id] ? `<img class="evidence-image" src="data:${images[item.id].mimeType};base64,${images[item.id].base64}" alt="Shared screenshot evidence" />` : ''}
           <div class="${languageClass(item)}" dir="auto">${escapeHtml(item.text)}</div>
-          <div class="hash-label">SHA-256 · sealed ${escapeHtml(formatDateTime(item.addedAt))}</div>
+          <div class="hash-label">Text SHA-256 · sealed ${escapeHtml(formatDateTime(item.addedAt))}</div>
           <div class="hash">${escapeHtml(item.sha256)}</div>
+          ${item.imageSha256 ? `<div class="hash-label">Image SHA-256</div><div class="hash">${escapeHtml(item.imageSha256)}</div>` : ''}
           <div class="canonical">Canonical string: <code>${escapeHtml(canonical)}</code></div>
         </section>`;
     })
@@ -132,6 +137,7 @@ export function buildReportHtml(items: Evidence[]): string {
   .badge { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
   .muted { color: #6E7A72; font-size: 9px; }
   .meta-row { display: flex; flex-wrap: wrap; gap: 4px 18px; color: #4B5B53; font-size: 9.5px; margin-bottom: 7px; }
+  .evidence-image { display: block; max-width: 100%; max-height: 190px; border-radius: 8px; border: 1px solid #DED5C4; margin: 7px 0; object-fit: contain; }
   .script { border-left: 2px solid #E9E0D0; padding: 2px 0 2px 10px; margin: 7px 0 9px; font-size: 11px; }
   .script-urdu { font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", serif; font-size: 12px; line-height: 2.1; }
   .script-pashto { font-family: "Noto Naskh Arabic", "Noto Nastaliq Urdu", serif; font-size: 11.5px; line-height: 1.9; }
@@ -195,10 +201,11 @@ export function buildReportHtml(items: Evidence[]): string {
 
   <h2>Integrity note</h2>
   <p>
-    Each SHA-256 digest is computed over the canonical string shown under the record
+    The text digest is computed over the canonical string shown under each record
     (<code>mehfooz:v1|record id|sender|timestamp|category|message text</code>).
-    Changing any character in the record changes the digest. The Mehfooz app can recompute
-    and compare the digest in the evidence vault.
+    Changing any character in the record changes the digest. For shared screenshots, the image
+    digest is the SHA-256 of the original image file, and the PDF also contains a thumbnail.
+    The Mehfooz app can recompute and compare the text digest in the evidence vault.
   </p>
 
   <h2>Legal note</h2>

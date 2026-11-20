@@ -7,8 +7,10 @@ import { BrandMark } from '@/components/BrandMark';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SectionLabel } from '@/components/SectionLabel';
 import { SettingsRow } from '@/components/SettingsRow';
+import { useNotificationAccess } from '@/hooks/useNotificationAccess';
 import { formatDateTime } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
+import { resetNativeCaptureState, setLiveCaptureEnabled } from '@/native/mehfoozNative';
 import { useStore } from '@/store/useStore';
 import { categoryMeta, colors, fonts, radius } from '@/theme';
 
@@ -16,23 +18,32 @@ export default function SettingsScreen() {
   const router = useRouter();
   const disguisedMode = useStore((state) => state.disguisedMode);
   const setDisguisedMode = useStore((state) => state.setDisguisedMode);
+  const liveMode = useStore((state) => state.liveMode);
+  const setLiveMode = useStore((state) => state.setLiveMode);
   const corrections = useStore((state) => state.corrections);
   const resetDemo = useStore((state) => state.resetDemo);
+  const { available, granted, openSettings } = useNotificationAccess();
 
   const recentCorrections = corrections.slice(0, 3);
 
   function confirmReset() {
     tapFeedback();
-    if (Platform.OS === 'web') {
+    const performReset = () => {
+      resetNativeCaptureState();
       resetDemo();
+    };
+
+    if (Platform.OS === 'web') {
+      performReset();
       return;
     }
+
     Alert.alert(
       'Reset demo?',
       'This clears every message, evidence record and correction on this device. The onboarding screen will return.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Reset', style: 'destructive', onPress: resetDemo },
+        { text: 'Reset', style: 'destructive', onPress: performReset },
       ],
     );
   }
@@ -65,6 +76,69 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <SectionLabel>Live protection</SectionLabel>
+        <View style={styles.card}>
+          <SettingsRow
+            icon="notifications-outline"
+            title="Notification access"
+            subtitle={
+              available
+                ? granted
+                  ? 'Android notification access is on.'
+                  : 'Required for live message capture.'
+                : 'Live capture requires the installed Android APK.'
+            }
+            right={
+              <Text style={[styles.accessStatus, granted && styles.accessOn]}>
+                {available ? (granted ? 'ON' : 'OFF') : 'N/A'}
+              </Text>
+            }
+            onPress={available ? openSettings : undefined}
+            divider
+          />
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            title="Live capture"
+            subtitle={
+              available
+                ? granted
+                  ? 'Screen message notifications as they arrive.'
+                  : 'Enable notification access first.'
+                : 'Expo Go runs the demo feed only.'
+            }
+            right={
+              <Switch
+                value={liveMode}
+                disabled={!available}
+                onValueChange={(value) => {
+                  tapFeedback();
+                  setLiveMode(value);
+                  setLiveCaptureEnabled(value);
+                }}
+                trackColor={{ false: colors.sandDeep, true: colors.pine }}
+                thumbColor={colors.sand}
+                ios_backgroundColor={colors.sandDeep}
+              />
+            }
+            divider
+          />
+          <SettingsRow
+            icon="scan-outline"
+            title="Screenshot OCR"
+            subtitle="ML Kit Latin · Tesseract Urdu/Pashto"
+            divider
+          />
+          <SettingsRow
+            icon="apps-outline"
+            title="Monitored apps"
+            subtitle="WhatsApp, Instagram, Facebook, Messenger, TikTok"
+          />
+        </View>
+        <Text style={styles.smallNote}>
+          Android asks for Notification access in a special settings screen. Only message-like
+          notifications are read; screenshots are shared manually from the share sheet.
+        </Text>
+
         <SectionLabel>Privacy</SectionLabel>
         <View style={styles.card}>
           <SettingsRow
@@ -75,8 +149,8 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon="phone-portrait-outline"
-            title="Scripted demo feed"
-            subtitle="Production reads Android notifications with permission."
+            title="Demo + live capture"
+            subtitle="Demo feed by default; live notifications with permission."
             divider
           />
           <SettingsRow
@@ -156,8 +230,8 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <SettingsRow
             icon="notifications-outline"
-            title="Scripted demo feed"
-            subtitle="Android notification access is the production path."
+            title="Live message capture"
+            subtitle="Notification content only; previews can be hidden by the app."
             divider
           />
           <SettingsRow
@@ -174,8 +248,8 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon="scan-outline"
-            title="Simulated screenshot OCR"
-            subtitle="ML Kit text recognition is the integration step."
+            title="Urdu/Pashto OCR"
+            subtitle="Tesseract is experimental; edit the transcript before sealing."
             divider
           />
           <SettingsRow
@@ -268,6 +342,15 @@ const styles = StyleSheet.create({
     fontSize: 7,
     letterSpacing: 1.1,
     color: colors.muted,
+  },
+  accessStatus: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    color: colors.muted,
+  },
+  accessOn: {
+    color: colors.safe,
   },
   card: {
     backgroundColor: colors.card,

@@ -22,6 +22,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { BootScreen } from '@/components/BootScreen';
+import { IncomingBridge } from '@/components/IncomingBridge';
 import { Onboarding } from '@/components/Onboarding';
 import { useHydrated, useStore } from '@/store/useStore';
 import { colors } from '@/theme';
@@ -83,7 +84,9 @@ export default function RootLayout() {
             <Stack.Screen name="report" />
             <Stack.Screen name="help" />
             <Stack.Screen name="shielded" />
+            <Stack.Screen name="shared-screenshot" />
           </Stack>
+          <IncomingBridge />
         </View>
       )}
     </SafeAreaProvider>

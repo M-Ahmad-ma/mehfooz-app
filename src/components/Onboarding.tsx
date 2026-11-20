@@ -74,10 +74,11 @@ export function Onboarding({ onDone }: Props) {
           <View style={styles.consent}>
             <Ionicons name="lock-closed" size={16} color={colors.sand} />
             <View style={styles.consentText}>
-              <Text style={styles.consentTitle}>Prototype demo mode</Text>
+              <Text style={styles.consentTitle}>Prototype mode</Text>
               <Text style={styles.consentBody}>
-                Runs on a scripted message feed. Everything stays on this phone. No account, no
-                network, no analytics.
+                Starts with a demo feed. On the installed Android build you can enable notification
+                access and share screenshots for live screening. No account, no backend, no
+                analytics.
               </Text>
             </View>
           </View>

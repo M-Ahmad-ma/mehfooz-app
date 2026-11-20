@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "expo.modules.mehfooznative.mehfooz-native-release-20:/values-watch-v20/values-watch-v20.xml",
+            "map": [
+                {
+                    "source": "/home/muhammad-ahmad/.gradle/caches/9.4.1/transforms/46ceb5910931c5243ef8956a53dd2303/transformed/appcompat-1.6.1/res/values-watch-v20/values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,5,8",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,214,385",
+                        "endLines": "4,7,10",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "209,380,553"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "expo.modules.mehfooznative.mehfooz-native-mergeReleaseResources-18:/values-watch-v20/values-watch-v20.xml",
+            "map": [
+                {
+                    "source": "/home/muhammad-ahmad/.gradle/caches/9.4.1/transforms/46ceb5910931c5243ef8956a53dd2303/transformed/appcompat-1.6.1/res/values-watch-v20/values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,5,8",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,214,385",
+                        "endLines": "4,7,10",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "209,380,553"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -40,6 +40,9 @@ export function MessageCard({ message, sealedHash, onPress }: Props) {
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {languageLabels[message.language]} · {timeAgo(message.receivedAt)}
+            {message.source === 'notification' && message.appLabel
+              ? ` · ${message.appLabel}`
+              : ''}
             {message.source === 'screenshot' ? ' · Screenshot' : ''}
           </Text>
         </View>

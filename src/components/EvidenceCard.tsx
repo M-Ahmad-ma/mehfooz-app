@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CategoryChip } from '@/components/CategoryChip';
-import { initials, shortHash, timeAgo } from '@/lib/format';
+import { fileUri, initials, shortHash, timeAgo } from '@/lib/format';
 import { colors, fonts, radius, scriptTextStyle } from '@/theme';
 import type { Evidence } from '@/types';
 
@@ -45,14 +45,19 @@ export function EvidenceCard({ evidence, corrected, onPress, onToggleInclude }: 
       </View>
 
       <View style={styles.senderRow}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials(evidence.sender)}</Text>
-        </View>
+        {evidence.imagePath ? (
+          <Image source={{ uri: fileUri(evidence.imagePath) }} style={styles.thumb} />
+        ) : (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials(evidence.sender)}</Text>
+          </View>
+        )}
         <View style={styles.senderText}>
           <Text style={styles.sender} numberOfLines={1}>
             {evidence.sender}
           </Text>
-          <Text style={styles.meta}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {evidence.appLabel ? `${evidence.appLabel} · ` : ''}
             {timeAgo(evidence.receivedAt)} · {Math.round(evidence.confidence * 100)}% confidence
           </Text>
         </View>
@@ -125,6 +130,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 10,
     color: colors.pine,
+  },
+  thumb: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: colors.sandDeep,
   },
   senderText: {
     flex: 1,
