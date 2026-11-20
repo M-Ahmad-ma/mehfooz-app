@@ -15,7 +15,7 @@ reliable stage fallback.
 | Area | In this prototype | Production path |
 |---|---|---|
 | Message source | Android `NotificationListenerService` on the installed build, with Notification access; scripted demo feed fallback | Same listener, broader app coverage and Play Store disclosure |
-| Classifier | Local rules + lexicon + context guards | Fine-tuned multilingual XLM-RoBERTa on RUHSOLD / ORUD / Pashto data |
+| Classifier | Local rules + optional Gemini Flash-Lite for live text (direct API, rules fallback) | Fine-tuned on-device multilingual model |
 | Shield | Harmful messages hidden in the app; high-confidence notifications dismissed from the shade; full classifier on app open | Native/on-device model running continuously in the service |
 | Evidence store | Local AsyncStorage + image files; text and screenshot SHA-256 | Encrypted SQLite, chain-of-custody export |
 | Screenshot check | Android share sheet; ML Kit Latin for Roman Urdu/English; Tesseract `urd`/`pus` for Urdu/Pashto | Better Urdu/Pashto OCR model and confidence-based review |
@@ -23,8 +23,9 @@ reliable stage fallback.
 | Voice guide | Text help in Urdu, Pashto and English | Recorded/neural Urdu + Pashto audio |
 | Legal status | “Tamper-evident evidence pack” | Admissibility decided by NCCIA/courts |
 
-The classifier code is behind `src/engine/classify.ts`, so the ML lead’s model can replace it
-without touching a screen.
+The rules engine is behind `src/engine/classify.ts`; the Gemini adapter is in
+`src/engine/geminiClassifier.ts`. A future on-device model can replace either without touching a
+screen.
 
 ---
 
@@ -32,11 +33,18 @@ without touching a screen.
 
 ```bash
 npm install
+cp .env.example .env
+# Add EXPO_PUBLIC_GEMINI_API_KEY (and optionally EXPO_PUBLIC_GEMINI_MODEL)
 npx expo start
 ```
 
 Expo Go runs the **demo feed only**. The live notification listener, share-sheet intake, and real
 OCR are custom native code and require an Android development build or APK.
+
+**Gemini key warning:** with no proxy, `EXPO_PUBLIC_GEMINI_API_KEY` is embedded in the APK and can be
+extracted. Use a low-quota key, never commit `.env`, and rotate the key after the pitch. Without a
+key the app runs entirely on local rules. Live text is sent to Google when Gemini is configured;
+screenshot images and OCR stay on the phone.
 
 ### Run the real build
 
@@ -63,9 +71,10 @@ first.
 2. Tap **Notification access** and enable Mehfooz in Android’s special access screen.
 3. Turn on **Live capture**.
 4. Send a WhatsApp message from a second phone. The notification is captured, classified, and
-   obvious threats are dismissed from the shade.
+   obvious threats are dismissed from the shade. With a Gemini key in the build, live text is
+   classified by Gemini and falls back to local rules on timeout/refusal.
 5. Share a screenshot from WhatsApp, Instagram or the gallery and choose **Mehfooz** in the share
-   sheet.
+   sheet. OCR stays local; the transcript goes to Gemini when configured.
 
 Web (`npm run web`) is a demo-feed fallback only.
 
@@ -79,7 +88,7 @@ Web (`npm run web`) is a demo-feed fallback only.
 |---|---|---|
 | 0:00 | Home, live protection on | “This is her phone. Mehfooz screens message notifications in the background.” |
 | 0:06 | Teammate sends a Roman Urdu threat on WhatsApp | “It classifies the message and hides it from the notification shade.” |
-| 0:15 | Teammate sends a friendly message containing “pagal” | “It understands context: a playful insult is not abuse.” |
+| 0:15 | **Simulate incoming message → Friendly context** | “It understands context: a playful insult is not abuse. Safe messages stay out of the harmful feed.” |
 | 0:23 | Open the shield card / threat record | “Nothing is deleted. She can review the original and correct a mistake.” |
 | 0:30 | Share a Roman Urdu screenshot into Mehfooz | “Screenshots go through OCR on the phone, then the same classifier.” |
 | 0:38 | Seal the screenshot; open the vault | “The text and the image each get a SHA-256 seal.” |
@@ -114,8 +123,8 @@ src/app/                    expo-router screens and the tab shell
   report.tsx                PDF preview + generation
   help.tsx                  Urdu / Pashto / English rights guidance
 src/components/             UI primitives; IncomingBridge; LiveStatusCard
-src/engine/                 normalizer, lexicon, classifier, eval script
-src/data/                   demo scenarios, screenshot samples, eval set, complaint copy
+src/engine/                 normalizer, lexicon, rules classifier, Gemini prompt/client, eval
+src/data/                   demo scenarios, screenshot samples, 160-message eval set, complaint copy
 src/native/mehfoozNative.ts Safe JS wrapper for the Kotlin module
 src/store/useStore.ts       Zustand store + AsyncStorage persistence
 src/lib/                    hash, PDF, report HTML, formatting, links, haptics
@@ -164,32 +173,39 @@ modules/mehfooz-native/     Kotlin Expo module
 
 ## Classifier
 
-`classify(text)` returns `{ label, confidence, reasons, scores }` with five labels:
-`safe`, `abusive`, `sexual`, `threat`, `blackmail`.
+`classify(text)` is the local rules engine. Live messages and shared-screenshot transcripts use
+`classifyWithFallback()`:
 
-- Normalization handles Roman Urdu leetspeak, repeated characters, Arabic-script variants,
-  diacritics and punctuation.
-- Weighted terms and multi-word phrases are matched; threat/blackmail signals take precedence.
-- A context guard discounts insults when a friendly signal is present and there is no threat,
-  blackmail or sexual signal.
-- Demo-critical moments are **pinned** so the pitch is deterministic. Everything else runs the
-  real engine.
-- Two messages are deliberately pinned: the Roman Urdu threat and the friendly context test.
+1. Gemini Flash-Lite if `EXPO_PUBLIC_GEMINI_API_KEY` is configured;
+2. local rules on timeout, network failure, safety refusal, invalid JSON or HTTP error.
 
-Run the held-out sanity evaluation:
+The five labels are `safe`, `abusive`, `sexual`, `threat`, `blackmail`. Rules normalization handles
+Roman Urdu leetspeak, repeated characters, Arabic-script variants, diacritics and punctuation.
+Weighted terms and phrases are matched; threat/blackmail take precedence; a context guard discounts
+friendly insults. Demo-critical moments are pinned so the pitch is deterministic; the scripted feed
+does not call Gemini.
+
+The confidence shown is a score, not a calibrated probability. Gemini’s self-reported confidence is
+also uncalibrated.
+
+### Evaluation
+
+The test set is now **160 messages**: 32 per category, 40 per language, including hard negatives and
+adversarial cases. It is not used in the prompt or for training.
 
 ```bash
-npm run eval
+npm run eval          # local rules
+npm run eval:gemini   # same test set through Gemini + fallback; needs a key
 ```
 
-This prints accuracy, per-category precision/recall/F1, per-language accuracy, and a confusion
-matrix. It is a **curated sanity set**, not an annotated test set. Report the numbers as such.
-Pashto is a low-resource language; do not claim otherwise.
+The rules engine scores **61.3%** on this harder set. That is expected: it was built with a small
+lexicon, and safe hard negatives (idioms, quotes, reported speech) are difficult for keyword rules.
+Do not quote 100% from the old 40-message sanity set; it is obsolete. The Gemini eval prints
+per-language/category F1, confusion, latency, refusals and fallback rate. Report those numbers,
+whatever they are. Pashto is low-resource; do not claim otherwise.
 
-> **Do not quote the eval script’s score as model accuracy.** The lexicon and this sanity set were
-> written together, so the script currently returns 100%. That proves the wiring works, not that
-> the classifier generalises. The pitch number must come from the ML lead’s independently
-> annotated held-out set.
+The Gemini test set is disjoint from the prompt. The `eval:gemini` script deliberately delays
+requests; raise `EVAL_DELAY_MS` if the fallback count is high from rate limiting.
 
 Corrections made with “This was a mistake — mark safe” are stored in the app and shown in
 Settings. They are the seed of the retraining loop.
@@ -201,7 +217,7 @@ Settings. They are the seed of the retraining loop.
 The PDF is generated locally with `expo-print` and shared with `expo-sharing`. It contains:
 
 - incident summary, sender list and date range;
-- every selected message with sender, timestamp, category and confidence;
+- every selected message with sender, timestamp, category, confidence and classifier source;
 - full text SHA-256 and canonical string per record;
 - screenshot thumbnail and image SHA-256 when a shared image is included;
 - NCCIA complaint steps and portal;
@@ -223,6 +239,7 @@ advice.
 
 ## Testing checklist
 
+- Build with and without `EXPO_PUBLIC_GEMINI_API_KEY`; confirm the local fallback.
 - Grant, revoke and re-grant Notification access.
 - Send a direct WhatsApp message and a group message from the second phone.
 - Test with WhatsApp message previews on and off.
@@ -230,9 +247,11 @@ advice.
 - Confirm a high-confidence harmful notification is dismissed while the app is closed.
 - Share a screenshot from WhatsApp and the gallery; test Roman Urdu (ML Kit) and Urdu/Pashto
   (Tesseract). Record real OCR accuracy; edit the transcript.
+- Confirm the classifier badge shows Gemini, local rules or fallback correctly.
 - Verify the text hash and the image hash in the vault.
 - Generate the PDF with a screenshot included; confirm the thumbnail and image hash appear.
-- Run the whole demo twice on a release APK in airplane mode.
+- Run the whole demo twice on a release APK; test once with the network off to confirm fallback.
+- Run `npm run eval:gemini` with a key and record the real numbers.
 
 The Android build has not been executed in this workspace. The TypeScript layer type-checks and
 Expo Doctor passes; the Kotlin/Gradle build and device tests still need to run on the demo machine.
@@ -243,9 +262,10 @@ Expo Doctor passes; the Kotlin/Gradle build and device tests still need to run o
 
 - **Settings → Reset demo** clears messages, evidence, corrections, the native capture queue and
   the pending share, and returns to onboarding.
-- App logic is local: the classifier, OCR, vault and PDF generation have no network dependency.
-- A **release APK** runs fully offline and is the recommended pitch build. Expo Go still fetches
-  the JS bundle from Metro at launch, so it is not a true airplane-mode demo.
+- OCR, the notification prefilter, the local rules engine, vault and PDF generation are local.
+  Gemini classification requires internet; without a key or network the app uses local rules.
+- The **demo feed** is fully offline and is the recommended stage fallback. Expo Go still fetches
+  the JS bundle from Metro at launch.
 - Keep the scripted feed available if the second phone, notification access or Wi-Fi misbehaves.
 
 ---
@@ -266,3 +286,7 @@ Expo Doctor passes; the Kotlin/Gradle build and device tests still need to run o
   it”.
 - Say **“Tesseract Urdu/Pashto is experimental”**; edit-the-transcript is part of the design, not
   a failure.
+- Say **“OCR and the notification prefilter are on-device; Gemini receives text only”**, not
+  “everything is on-device”.
+- The Gemini key is in the APK. Use a low-quota key, rotate it after the pitch, and never commit
+  `.env`. Production needs a proxy or an on-device model.

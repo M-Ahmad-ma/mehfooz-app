@@ -89,3 +89,9 @@ export function sourceLabel(source: string, appLabel?: string): string {
 export function fileUri(path: string): string {
   return path.startsWith('file://') ? path : `file://${path}`;
 }
+
+export function classifierSourceLabel(source?: string, model?: string): string {
+  if (source === 'gemini') return model ? `Gemini · ${model}` : 'Gemini';
+  if (source === 'rules-fallback') return 'Local rules · Gemini fallback';
+  return 'Local rules';
+}

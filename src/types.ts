@@ -4,6 +4,19 @@ export type Language = 'ur' | 'roman-ur' | 'ps' | 'en';
 
 export type MessageSource = 'demo' | 'screenshot' | 'notification';
 
+export type ClassifierSource = 'rules' | 'gemini' | 'rules-fallback';
+
+export type ClassifierResult = {
+  label: Category;
+  confidence: number;
+  reasons: string[];
+  scores: Record<Exclude<Category, 'safe'>, number>;
+  source?: ClassifierSource;
+  model?: string;
+  latencyMs?: number;
+  error?: string;
+};
+
 export type Message = {
   id: string;
   sender: string;
@@ -20,6 +33,10 @@ export type Message = {
   appLabel?: string;
   /** Native notification id, used to deduplicate queued captures. */
   externalId?: string;
+  /** Which classifier produced this result. */
+  classifierSource?: ClassifierSource;
+  modelVersion?: string;
+  classifierLatencyMs?: number;
 };
 
 export type Evidence = {
@@ -42,6 +59,10 @@ export type Evidence = {
   imageMimeType?: string;
   imageWidth?: number;
   imageHeight?: number;
+  /** Which classifier produced the record. */
+  classifierSource?: ClassifierSource;
+  modelVersion?: string;
+  classifierLatencyMs?: number;
 };
 
 export type Correction = {
@@ -94,4 +115,5 @@ export type SharedScreenshotInput = {
   imageMimeType: string;
   imageWidth: number;
   imageHeight: number;
+  classification: ClassifierResult;
 };

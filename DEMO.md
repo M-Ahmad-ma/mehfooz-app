@@ -4,26 +4,26 @@ The app is a prototype. The story is real. Keep the two separate.
 
 ## Before you walk on stage
 
-1. Install the **release APK** on the demo phone. Expo Go is rehearsal-only; it cannot use the
-   notification listener, share target or OCR.
-2. Open **Settings → Live protection**, tap **Notification access**, and enable Mehfooz in Android’s
-   special access screen. Turn **Live capture** on.
-3. Send one WhatsApp message from the second phone and confirm it appears in the shield feed.
-   Share one screenshot from WhatsApp into Mehfooz and confirm OCR opens.
+1. Put a low-quota Gemini key in `.env` as `EXPO_PUBLIC_GEMINI_API_KEY` and build the **release
+   APK**. Expo Go is rehearsal-only; it cannot use the notification listener, share target or OCR.
+2. Open **Settings → Live protection**, tap **Notification access**, enable Mehfooz, and turn
+   **Live capture** on. Confirm the AI classification row says **ON**.
+3. Send one WhatsApp message from the second phone and confirm it appears in the shield feed with a
+   Gemini or local-fallback classifier badge. Share one screenshot into Mehfooz and confirm OCR +
+   text classification work.
 4. Reset the demo: **Settings → Reset demo → Reset**, then walk through onboarding once. Re-enable
    live capture if you reset after step 3.
-5. Turn on **airplane mode** and run the full 60 seconds once. The release APK has no network
-   dependency.
+5. Run the full 60 seconds once on Wi-Fi. The demo feed does not need the network; Gemini does.
 6. Record a 60-second screen capture and keep it on the laptop and the phone.
-7. Set brightness; silence other apps. Keep the scripted feed ready as a fallback.
+7. Keep a low-quota key in the build, and rotate it after the pitch. Never commit `.env`.
 
 ## The 60-second live run
 
 | Time | Do | Say |
 |---|---|---|
 | 0:00 | Home, live protection on | “Every day, women in KP get messages like this — in languages safety tools don’t understand.” |
-| 0:06 | Teammate sends a Roman Urdu threat on WhatsApp | “Mehfooz classifies the notification and hides it from the shade.” |
-| 0:15 | Teammate sends a friendly message containing “pagal” | “It reads meaning, not keywords. A playful insult passes.” |
+| 0:06 | Teammate sends a Roman Urdu threat on WhatsApp | “Mehfooz classifies the notification — Gemini when online, local rules as fallback — and hides it from the shade.” |
+| 0:15 | Tap **Simulate incoming message → Friendly context** | “It reads meaning, not keywords. The toast confirms the safe message; the harmful-only feed stays clean.” |
 | 0:23 | Open the shield card / threat | “Nothing is deleted. She can review the original and correct a mistake.” |
 | 0:30 | Share a Roman Urdu screenshot into Mehfooz | “Screenshots go through OCR on the phone, then the same classifier.” |
 | 0:38 | Seal the screenshot; open the vault | “The text and the image each get a SHA-256 seal.” |
@@ -52,6 +52,9 @@ Use this if notification access, the second phone or the share sheet fails.
 If you skip the correction, the original threat record stays included; generate the PDF after the
 friendly-context beat. If you show the correction, add the blackmail message before the vault.
 
+Safe messages are hidden from the feed. The friendly-context beat is a toast only; say “the safe
+message passed” while it is visible. Do not expect a card for it.
+
 ## Fallbacks
 
 | Problem | Recovery |
@@ -64,7 +67,8 @@ friendly-context beat. If you show the correction, add the blackmail message bef
 | App reloads | Open the backup screen recording; keep talking. |
 | A classification looks wrong | Open the review sheet, choose **This was a mistake — mark safe**, and use it: “This is exactly why corrections exist.” |
 | Report button says “Select evidence to continue” | Go to **Vault** and check the corrected record, or simulate another harmful message. |
-| Wi-Fi is down | On the release APK, nothing to do: the app is offline. On Expo Go, switch to the backup recording. |
+| Wi-Fi is down | Gemini cannot run; local rules take over automatically. Use the scripted feed and say “local fallback”; do not troubleshoot on stage. |
+| Gemini is slow or refuses | The source badge shows “Local rules · Gemini fallback”; continue with that result. |
 
 ## Lines you can defend
 
@@ -77,13 +81,17 @@ friendly-context beat. If you show the correction, add the blackmail message bef
 - “A small native pre-filter hides obvious threats while the app is closed; the full classifier runs
   when she opens the app.”
 - “The vault is local and hash-sealed. Encrypted storage is the next milestone.”
+- “The notification prefilter and OCR run on the phone. Gemini receives only text, never the
+  screenshot image. Local rules are the fallback.”
+- “The Gemini key is in this prototype APK; we use a low-quota key and rotate it after the pitch.
+  Production needs a proxy or an on-device model.”
 - “Screenshots are shared explicitly through the Android share sheet. OCR runs on the phone; ML Kit
   handles Roman Urdu and English, Tesseract handles Urdu/Pashto and is experimental.”
 - “We call it a tamper-evident evidence pack, not legally valid evidence. NCCIA and the courts decide
   admissibility.”
-- “Our eval set is small and curated. We report per-language numbers, and we report Pashto honestly.”
-- “The prototype’s eval script scores 100% on a set written alongside the lexicon. That is a wiring
-  check, not an accuracy claim. The real number will come from an independently annotated test set.”
+- “Our test set is 160 messages, balanced across languages, with hard negatives. The rules baseline
+  is 61.3%; the Gemini eval is separate. We report per-language numbers and Pashto honestly.”
+- “The demo feed is pinned for the stage. The test set is not used in the prompt or for training.”
 
 ## Questions specific to this build
 
@@ -101,9 +109,10 @@ friendly-context beat. If you show the correction, add the blackmail message bef
 > correction loop. The demo-critical moments are pinned for reliability. The next step is replacing
 > the rules engine with the fine-tuned multilingual model behind the same interface.
 
-**Why not use a hosted LLM?**
-> Privacy and latency. The promise is local analysis; a hosted model would also fail in
-> low-connectivity districts, which are exactly the districts we care about.
+**Why use Gemini if privacy matters?**
+> It is an accuracy experiment, not the production design. OCR, the notification prefilter and the
+> local rules stay on the phone. Gemini sees text only, with consent and a fallback. Production
+> would use a proxy plus an on-device model or a strictly consented cloud mode.
 
 **Can judges break the friendly-context test?**
 > Possibly. The correction flow is the answer: she can mark a false positive as safe, and that label
@@ -113,6 +122,11 @@ friendly-context beat. If you show the correction, add the blackmail message bef
 > ML Kit Latin is reliable for Roman Urdu and English. Tesseract Urdu/Pashto is experimental,
 > especially with Nastaliq. The transcript is editable before sealing, so OCR is assistive, not
 > authoritative.
+
+**How accurate is Gemini?**
+> We will report the real number from the 160-message test set, per language and category. It is
+> not calibrated confidence, and Pashto remains the weakest language. If Gemini refuses or fails,
+> the local rules result is labelled as fallback.
 
 **What happens if she loses her phone?**
 > The evidence is local. Production would add an encrypted backup that she controls. We are not
@@ -138,6 +152,8 @@ friendly-context beat. If you show the correction, add the blackmail message bef
 - “The evidence is legally valid.”
 - “The model is trained and accurate on Pashto.”
 - “Tesseract Urdu/Pashto is accurate” — it is experimental and the transcript is editable.
-- “The classifier is 100% accurate” — it is a curated sanity set, not a benchmark.
+- Any “100% accurate” claim — the 160-message set gives the rules baseline 61.3%; the Gemini eval is separate.
 - “It is fully encrypted.”
 - “It is available on iPhone.”
+- “Everything runs on-device” — OCR/prefilter/rules are local; Gemini receives text.
+- “The Gemini key is safe in the app” — it is in the APK for the prototype; rotate it.

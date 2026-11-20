@@ -1,14 +1,9 @@
-import type { Category } from '../types';
+import type { Category, ClassifierResult } from '../types';
 
 import { SIGNALS, type HarmCategory } from './lexicon';
 import { hasFriendlyContext, normalizeText } from './normalize';
 
-export type ClassifierResult = {
-  label: Category;
-  confidence: number;
-  reasons: string[];
-  scores: Record<HarmCategory, number>;
-};
+export type { ClassifierResult, ClassifierSource } from '../types';
 
 export type Classifier = (text: string) => ClassifierResult;
 
@@ -95,6 +90,7 @@ export function classify(input: string): ClassifierResult {
       confidence: friendly && playful ? 0.88 : 0.91,
       reasons,
       scores,
+      source: 'rules',
     };
   }
 
@@ -119,6 +115,7 @@ export function classify(input: string): ClassifierResult {
     confidence: Math.round(confidence * 100) / 100,
     reasons,
     scores,
+    source: 'rules',
   };
 }
 

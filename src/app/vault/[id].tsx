@@ -22,7 +22,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { SettingsRow } from '@/components/SettingsRow';
 import { Toast } from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
-import { fileUri, formatDateTime, sourceLabel } from '@/lib/format';
+import { classifierSourceLabel, fileUri, formatDateTime, sourceLabel } from '@/lib/format';
 import { canonicalEvidenceString, verifyEvidence } from '@/lib/hash';
 import { successFeedback, warnFeedback } from '@/lib/haptics';
 import { useStore } from '@/store/useStore';
@@ -227,6 +227,12 @@ export default function EvidenceDetailScreen() {
             icon="phone-portrait-outline"
             title="Source"
             subtitle={sourceLabel(item.source, item.appLabel)}
+            divider
+          />
+          <SettingsRow
+            icon="sparkles-outline"
+            title="Classifier"
+            subtitle={classifierSourceLabel(item.classifierSource, item.modelVersion)}
           />
         </View>
 

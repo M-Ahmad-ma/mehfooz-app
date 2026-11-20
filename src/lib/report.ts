@@ -3,7 +3,7 @@ import { categoryMeta } from '../theme';
 import type { Evidence } from '../types';
 
 import { canonicalEvidenceString } from './canonical';
-import { formatDate, formatDateRange, formatDateTime, shortHash, sourceLabel } from './format';
+import { classifierSourceLabel, formatDate, formatDateRange, formatDateTime, shortHash, sourceLabel } from './format';
 
 function escapeHtml(value: string): string {
   return value
@@ -70,6 +70,7 @@ export function buildReportHtml(items: Evidence[], images: ReportImages = {}): s
           <div class="meta-row">
             <span><strong>Sender:</strong> ${escapeHtml(item.sender)}</span>
             <span><strong>Source:</strong> ${escapeHtml(sourceLabel(item.source, item.appLabel))}</span>
+            <span><strong>Classifier:</strong> ${escapeHtml(classifierSourceLabel(item.classifierSource, item.modelVersion))}</span>
             <span><strong>Confidence:</strong> ${Math.round(item.confidence * 100)}%</span>
           </div>
           ${images[item.id] ? `<img class="evidence-image" src="data:${images[item.id].mimeType};base64,${images[item.id].base64}" alt="Shared screenshot evidence" />` : ''}

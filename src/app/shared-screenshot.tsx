@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -17,13 +17,13 @@ import { CategoryChip } from '@/components/CategoryChip';
 import { ConfidenceBar } from '@/components/ConfidenceBar';
 import { EmptyState } from '@/components/EmptyState';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { classify } from '@/engine/classify';
-import { fileUri } from '@/lib/format';
+import { classifyWithFallback, isGeminiConfigured } from '@/engine/geminiClassifier';
+import { classifierSourceLabel, fileUri } from '@/lib/format';
 import { successFeedback, tapFeedback, warnFeedback } from '@/lib/haptics';
 import { getPendingShare, mehfoozNative } from '@/native/mehfoozNative';
 import { useStore } from '@/store/useStore';
 import { colors, fonts, radius, scriptTextStyle } from '@/theme';
-import type { Language } from '@/types';
+import type { ClassifierResult, Language } from '@/types';
 
 type OcrLanguage = 'latin' | 'urdu' | 'pashto';
 
@@ -55,6 +55,9 @@ export default function SharedScreenshotScreen() {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState('');
+  const [result, setResult] = useState<ClassifierResult | null>(null);
 
   useEffect(() => {
     if (pendingShare) return;
@@ -73,9 +76,10 @@ export default function SharedScreenshotScreen() {
     setText('');
     setOcrState('idle');
     setError('');
+    setCheckError('');
+    setResult(null);
   }, [pendingShare?.path]);
 
-  const result = useMemo(() => (text.trim() ? classify(text) : null), [text]);
   const script = scriptTextStyle(scriptLanguage(language));
 
   async function handleRead() {
@@ -86,6 +90,8 @@ export default function SharedScreenshotScreen() {
 
     setOcrState('reading');
     setError('');
+    setCheckError('');
+    setResult(null);
 
     try {
       const ocr = await mehfoozNative.recognizeText(pendingShare.path, language);
@@ -100,6 +106,31 @@ export default function SharedScreenshotScreen() {
       setOcrState('error');
       setError('OCR could not read this image. Type or paste the text below.');
       warnFeedback();
+    }
+  }
+
+  async function handleCheck() {
+    if (!text.trim() || checking) return;
+
+    setChecking(true);
+    setCheckError('');
+
+    try {
+      const classification = await classifyWithFallback(
+        text.trim(),
+        evidenceLanguage(language),
+      );
+      setResult(classification);
+      successFeedback();
+
+      if (classification.source === 'rules-fallback') {
+        setCheckError('Gemini was unavailable; the local rules result is shown.');
+      }
+    } catch {
+      setCheckError('Could not classify this text. Please try again.');
+      warnFeedback();
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -124,6 +155,7 @@ export default function SharedScreenshotScreen() {
         imageMimeType: pendingShare.mimeType || image.mimeType,
         imageWidth: image.width,
         imageHeight: image.height,
+        classification: result,
       });
 
       await mehfoozNative.clearPendingShare();
@@ -254,6 +286,8 @@ export default function SharedScreenshotScreen() {
           onChangeText={(value) => {
             setText(value);
             setError('');
+            setCheckError('');
+            setResult(null);
           }}
           multiline
           placeholder="Tap Read text, or type/paste the message manually."
@@ -266,6 +300,30 @@ export default function SharedScreenshotScreen() {
           complaint pack.
         </Text>
 
+        <Button
+          label={
+            isGeminiConfigured
+              ? checking
+                ? 'Checking with Gemini…'
+                : 'Check with Gemini'
+              : 'Check with local rules'
+          }
+          icon="sparkles-outline"
+          loading={checking}
+          disabled={!text.trim()}
+          onPress={() => {
+            void handleCheck();
+          }}
+          style={styles.checkButton}
+        />
+
+        {checkError ? (
+          <View style={styles.checkErrorCard}>
+            <Ionicons name="information-circle" size={15} color={colors.amber} />
+            <Text style={styles.checkErrorText}>{checkError}</Text>
+          </View>
+        ) : null}
+
         {result ? (
           <View style={styles.resultCard}>
             <View style={styles.resultHeader}>
@@ -274,6 +332,9 @@ export default function SharedScreenshotScreen() {
                 {safe ? 'No harmful intent detected' : 'Would be sealed as evidence'}
               </Text>
             </View>
+            <Text style={styles.classifierLine}>
+              {classifierSourceLabel(result.source, result.model)}
+            </Text>
             <ConfidenceBar category={result.label} confidence={result.confidence} />
             <View style={styles.reasonList}>
               {result.reasons.map((reason, index) => (
@@ -323,8 +384,8 @@ export default function SharedScreenshotScreen() {
         <View style={styles.note}>
           <Ionicons name="lock-closed-outline" size={14} color={colors.muted} />
           <Text style={styles.noteText}>
-            OCR and classification run on this phone. The image hash and the text hash are both
-            shown in the evidence record.
+            OCR stays on this phone. Classification uses Gemini when configured, with local rules
+            as fallback. The image hash and the text hash are shown in the evidence record.
           </Text>
         </View>
       </ScrollView>
@@ -407,6 +468,32 @@ const styles = StyleSheet.create({
   },
   readButton: {
     marginTop: 12,
+  },
+  checkButton: {
+    marginTop: 12,
+  },
+  checkErrorCard: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 7,
+    backgroundColor: colors.amberSoft,
+    borderRadius: radius.md,
+    padding: 10,
+  },
+  checkErrorText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    lineHeight: 14.5,
+    color: colors.amber,
+  },
+  classifierLine: {
+    fontFamily: fonts.medium,
+    fontSize: 9.5,
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
   },
   errorCard: {
     marginTop: 10,

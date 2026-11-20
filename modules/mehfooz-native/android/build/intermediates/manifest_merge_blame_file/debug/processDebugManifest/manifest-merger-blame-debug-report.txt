@@ -1,0 +1,60 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="expo.modules.mehfooznative" >
+4
+5    <uses-sdk android:minSdkVersion="24" />
+5-->INJECTED
+5-->INJECTED
+6
+7    <application>
+7-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:2:3-26:17
+8        <service
+8-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:3:5-11:15
+9            android:name="expo.modules.mehfooznative.MehfoozNotificationService"
+9-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:4:7-75
+10            android:exported="true"
+10-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:5:7-30
+11            android:label="Mehfooz shield"
+11-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:6:7-37
+12            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+12-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:7:7-81
+13            <intent-filter>
+13-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:8:7-10:23
+14                <action android:name="android.service.notification.NotificationListenerService" />
+14-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:9:9-91
+14-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:9:17-88
+15            </intent-filter>
+16        </service>
+17
+18        <activity
+18-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:13:5-25:16
+19            android:name="expo.modules.mehfooznative.ShareActivity"
+19-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:14:7-62
+20            android:excludeFromRecents="true"
+20-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:16:7-40
+21            android:exported="true"
+21-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:15:7-30
+22            android:launchMode="singleTop"
+22-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:18:7-37
+23            android:noHistory="true"
+23-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:17:7-31
+24            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+24-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:19:7-66
+25            <intent-filter>
+25-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:20:7-24:23
+26                <action android:name="android.intent.action.SEND" />
+26-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:21:9-61
+26-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:21:17-58
+27
+28                <category android:name="android.intent.category.DEFAULT" />
+28-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:22:9-68
+28-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:22:19-65
+29
+30                <data android:mimeType="image/*" />
+30-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:23:9-44
+30-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:23:15-41
+31            </intent-filter>
+32        </activity>
+33    </application>
+34
+35</manifest>

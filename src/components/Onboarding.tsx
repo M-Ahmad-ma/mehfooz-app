@@ -76,9 +76,9 @@ export function Onboarding({ onDone }: Props) {
             <View style={styles.consentText}>
               <Text style={styles.consentTitle}>Prototype mode</Text>
               <Text style={styles.consentBody}>
-                Starts with a demo feed. On the installed Android build you can enable notification
-                access and share screenshots for live screening. No account, no backend, no
-                analytics.
+                Starts with a demo feed. On the installed Android build, enable notification access
+                and share screenshots for live screening. OCR and images stay on the phone; live
+                text may go to Gemini. No account, no backend.
               </Text>
             </View>
           </View>

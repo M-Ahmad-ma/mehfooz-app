@@ -7,6 +7,7 @@ import { BrandMark } from '@/components/BrandMark';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SectionLabel } from '@/components/SectionLabel';
 import { SettingsRow } from '@/components/SettingsRow';
+import { geminiModel, isGeminiConfigured } from '@/engine/geminiClassifier';
 import { useNotificationAccess } from '@/hooks/useNotificationAccess';
 import { formatDateTime } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
@@ -129,6 +130,21 @@ export default function SettingsScreen() {
             divider
           />
           <SettingsRow
+            icon="sparkles-outline"
+            title="AI classification"
+            subtitle={
+              isGeminiConfigured
+                ? `Gemini · ${geminiModel} · text only`
+                : 'No Gemini key in this build · local rules'
+            }
+            right={
+              <Text style={[styles.accessStatus, isGeminiConfigured && styles.accessOn]}>
+                {isGeminiConfigured ? 'ON' : 'LOCAL'}
+              </Text>
+            }
+            divider
+          />
+          <SettingsRow
             icon="apps-outline"
             title="Monitored apps"
             subtitle="WhatsApp, Instagram, Facebook, Messenger, TikTok"
@@ -136,15 +152,17 @@ export default function SettingsScreen() {
         </View>
         <Text style={styles.smallNote}>
           Android asks for Notification access in a special settings screen. Only message-like
-          notifications are read; screenshots are shared manually from the share sheet.
+          notifications are read; screenshots are shared manually. When Gemini is configured, live
+          message text and screenshot transcripts are sent to Google; images and OCR stay on the
+          phone. Local rules always work offline.
         </Text>
 
         <SectionLabel>Privacy</SectionLabel>
         <View style={styles.card}>
           <SettingsRow
             icon="lock-closed-outline"
-            title="On-device only"
-            subtitle="No account, no uploads, no analytics."
+            title="Local first"
+            subtitle="OCR, notification prefilter and rules run on the phone."
             divider
           />
           <SettingsRow
@@ -155,8 +173,8 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon="server-outline"
-            title="No backend"
-            subtitle="Nothing leaves this phone in the prototype."
+            title="Direct API"
+            subtitle="No Mehfooz backend; Gemini is called directly when configured."
           />
         </View>
 
@@ -236,8 +254,8 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon="analytics-outline"
-            title="Rules-based classifier"
-            subtitle="A fine-tuned multilingual model is the next milestone."
+            title="Gemini + local rules"
+            subtitle="Live text uses Gemini when configured; rules are the offline fallback."
             divider
           />
           <SettingsRow

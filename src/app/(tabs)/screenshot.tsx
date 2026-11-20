@@ -190,7 +190,8 @@ export default function ScreenshotScreen() {
           <Ionicons name="information-circle-outline" size={14} color={colors.muted} />
           <Text style={styles.noteText}>
             Bundled samples use simulated OCR. Shared screenshots use ML Kit Latin or Tesseract
-            Urdu/Pashto on the installed build; edit the transcript before sealing.
+            Urdu/Pashto on the installed build; edit the transcript before sealing. Text may be
+            classified by Gemini, with local rules as fallback.
           </Text>
         </View>
       </ScrollView>

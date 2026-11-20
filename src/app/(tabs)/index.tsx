@@ -37,6 +37,9 @@ export default function ShieldScreen() {
   const { toast, show } = useToast();
 
   const shielded = messages.filter((message) => message.hidden && !message.correctedTo);
+  const flagged = messages.filter(
+    (message) => message.category !== 'safe' && message.correctedTo !== 'safe',
+  );
   const selected = messages.find((message) => message.id === selectedId) ?? null;
   const selectedEvidence = selected
     ? evidence.find((item) => item.messageId === selected.id)
@@ -57,7 +60,7 @@ export default function ShieldScreen() {
       if (!message) return;
       if (message.category === 'safe') {
         successFeedback();
-        show('Safe message passed · context understood', 'success');
+        show('Safe message passed · hidden from the harmful feed', 'success');
       } else {
         warnFeedback();
         show(`${categoryMeta[message.category].label} shielded · evidence sealed`, 'warning');
@@ -170,9 +173,9 @@ export default function ShieldScreen() {
 
         <View style={styles.sectionRow}>
           <View>
-            <Text style={styles.sectionTitle}>Demo inbox</Text>
+            <Text style={styles.sectionTitle}>Flagged inbox</Text>
             <Text style={styles.sectionSub}>
-              {messages.length} {messages.length === 1 ? 'message' : 'messages'} in the feed
+              {flagged.length} flagged · safe messages are hidden
             </Text>
           </View>
           <View style={styles.livePill}>
@@ -181,16 +184,16 @@ export default function ShieldScreen() {
           </View>
         </View>
 
-        {messages.length === 0 ? (
+        {flagged.length === 0 ? (
           <EmptyState
-            icon="chatbubbles-outline"
-            title="The inbox is empty"
-            body="Simulate a message to see the shield classify, hide and seal it."
-            actionLabel="Simulate a message"
+            icon="shield-checkmark-outline"
+            title="No harmful messages"
+            body="The shield is passing safe messages. Simulate a threat or a harmful message to see one flagged and sealed."
+            actionLabel="Simulate a harmful message"
             onAction={() => setSimulateOpen(true)}
           />
         ) : (
-          messages.map((message) => (
+          flagged.map((message) => (
             <MessageCard
               key={message.id}
               message={message}
@@ -206,7 +209,8 @@ export default function ShieldScreen() {
         <View style={styles.footnote}>
           <Ionicons name="information-circle-outline" size={14} color={colors.muted} />
           <Text style={styles.footnoteText}>
-            Demo and live captures stay on this phone. The scripted feed remains for rehearsal.
+            Only flagged messages appear here. OCR and the notification prefilter stay on this
+            phone. When Gemini is configured, message text is sent to Google; images stay local.
           </Text>
         </View>
       </ScrollView>

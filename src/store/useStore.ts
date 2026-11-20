@@ -6,6 +6,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { demoScenarios, seedMessages, type DemoScenario } from '../data/scenarios';
 import { getScreenshotSample } from '../data/screenshots';
 import { classify } from '../engine/classify';
+import { classifyWithFallback } from '../engine/geminiClassifier';
 import { sealEvidence } from '../lib/hash';
 import { makeId } from '../lib/id';
 import type {
@@ -64,6 +65,9 @@ async function createEvidence(message: Message, image?: EvidenceImage): Promise<
     includeInReport: true,
     source: message.source,
     appLabel: message.appLabel,
+    classifierSource: message.classifierSource,
+    modelVersion: message.modelVersion,
+    classifierLatencyMs: message.classifierLatencyMs,
     ...(image ?? {}),
   };
 
@@ -179,6 +183,7 @@ export const useStore = create<StoreState>()(
           reasons: result.reasons,
           hidden: harmful,
           source: 'demo',
+          classifierSource: 'rules',
         };
 
         set((state) => ({ messages: [message, ...state.messages] }));
@@ -208,6 +213,7 @@ export const useStore = create<StoreState>()(
           reasons: result.reasons,
           hidden: harmful,
           source: 'screenshot',
+          classifierSource: 'rules',
         };
 
         set((state) => ({ messages: [message, ...state.messages] }));
@@ -227,14 +233,15 @@ export const useStore = create<StoreState>()(
         const text = payload.text.trim();
         if (!text) return null;
 
-        const result = classify(text);
+        const language = detectLanguage(text);
+        const result = await classifyWithFallback(text, language);
         const harmful = result.label !== 'safe';
         const message: Message = {
           id: makeId('msg'),
           externalId: payload.id,
           sender: payload.sender.trim() || payload.appLabel || 'Unknown sender',
           text,
-          language: detectLanguage(text),
+          language,
           receivedAt: new Date(payload.postedAt > 0 ? payload.postedAt : Date.now()).toISOString(),
           category: result.label,
           confidence: result.confidence,
@@ -242,6 +249,9 @@ export const useStore = create<StoreState>()(
           hidden: harmful,
           source: 'notification',
           appLabel: payload.appLabel || undefined,
+          classifierSource: result.source,
+          modelVersion: result.model,
+          classifierLatencyMs: result.latencyMs,
         };
 
         // Create the evidence before committing the message so a storage or
@@ -263,7 +273,7 @@ export const useStore = create<StoreState>()(
         const text = input.text.trim();
         if (!text) return null;
 
-        const result = classify(text);
+        const result = input.classification;
         if (result.label === 'safe') return null;
 
         const message: Message = {
@@ -278,6 +288,9 @@ export const useStore = create<StoreState>()(
           hidden: true,
           source: 'screenshot',
           appLabel: 'Shared image',
+          classifierSource: result.source,
+          modelVersion: result.model,
+          classifierLatencyMs: result.latencyMs,
         };
 
         const evidence = await createEvidence(message, {

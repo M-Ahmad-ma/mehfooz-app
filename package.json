@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "eval": "tsx src/engine/eval.ts",
-    "prebuild:android": "expo prebuild -p android"
+    "prebuild:android": "expo prebuild -p android",
+    "eval:gemini": "tsx scripts/eval-gemini.ts"
   },
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.3",
@@ -44,6 +45,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
+    "dotenv": "^18.0.10",
     "tsx": "^4.20.0",
     "typescript": "~6.0.3"
   }

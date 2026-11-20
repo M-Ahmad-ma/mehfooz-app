@@ -7,7 +7,7 @@ import { Button } from '@/components/Button';
 import { CategoryChip } from '@/components/CategoryChip';
 import { ConfidenceBar } from '@/components/ConfidenceBar';
 import { HashSeal } from '@/components/HashSeal';
-import { formatDateTime, sourceLabel } from '@/lib/format';
+import { classifierSourceLabel, formatDateTime, sourceLabel } from '@/lib/format';
 import { colors, fonts, languageLabels, radius, scriptTextStyle } from '@/theme';
 import type { Evidence, Message } from '@/types';
 
@@ -135,6 +135,11 @@ export function ReviewSheet({
           value={formatDateTime(message.receivedAt)}
         />
         <MetaRow icon="phone-portrait-outline" label="Source" value={sourceLabel(message.source, message.appLabel)} />
+        <MetaRow
+          icon="sparkles-outline"
+          label="Classifier"
+          value={classifierSourceLabel(message.classifierSource, message.modelVersion)}
+        />
       </View>
 
       {evidence ? (

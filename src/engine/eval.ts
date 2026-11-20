@@ -26,7 +26,7 @@ for (const message of evalMessages) {
   if (result.label === message.label) languageTotals[message.language].correct += 1;
 }
 
-console.log('\nMehfooz classifier — held-out curated eval set');
+console.log('\nMehfooz rules baseline — 160-message held-out test set');
 console.log(`Messages: ${evalMessages.length}`);
 console.log(`Accuracy: ${((correct / evalMessages.length) * 100).toFixed(1)}%\n`);
 
@@ -68,5 +68,5 @@ console.log('\nConfusion matrix (rows = actual, columns = predicted)');
 console.table(confusion);
 
 console.log(
-  '\nNote: this is a small curated sanity set for the rules engine, not a substitute for an annotated test set. Report Pashto honestly.\n',
+  '\nNote: this is the rules baseline on a deliberately hard 160-message test set. It is not training or prompt data. Run npm run eval:gemini for the model comparison, and report Pashto honestly.\n',
 );

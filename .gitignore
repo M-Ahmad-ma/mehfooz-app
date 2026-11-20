@@ -20,7 +20,9 @@ yarn-debug.*
 yarn-error.*
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
 
 # macOS
 .DS_Store
