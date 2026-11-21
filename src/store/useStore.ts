@@ -7,14 +7,17 @@ import { demoScenarios, seedMessages, type DemoScenario } from '../data/scenario
 import { getScreenshotSample } from '../data/screenshots';
 import { classify } from '../engine/classify';
 import { classifyWithFallback } from '../engine/geminiClassifier';
-import { sealEvidence } from '../lib/hash';
+import { sealCallRecording, sealEvidence } from '../lib/hash';
 import { makeId } from '../lib/id';
+import { isValidPhoneNumber, normalizePhoneNumber } from '../lib/phone';
 import type {
+  CallRecording,
   Category,
   Correction,
   Evidence,
   IncomingNotification,
   Message,
+  PendingCallRecording,
   PendingShare,
   SharedScreenshotInput,
 } from '../types';
@@ -27,6 +30,9 @@ type StoreState = {
   messages: Message[];
   evidence: Evidence[];
   corrections: Correction[];
+  callRecordings: CallRecording[];
+  watchlist: string[];
+  callProtectionEnabled: boolean;
 
   completeOnboarding: () => void;
   seedInbox: () => void;
@@ -34,6 +40,12 @@ type StoreState = {
   addScreenshot: (sampleId: string) => Promise<Message | null>;
   addIncoming: (payload: IncomingNotification) => Promise<Message | null>;
   addSharedScreenshot: (input: SharedScreenshotInput) => Promise<Message | null>;
+  addCallRecording: (payload: PendingCallRecording) => Promise<CallRecording | null>;
+  removeCallRecording: (id: string) => void;
+  toggleCallInclude: (id: string) => void;
+  addWatchlistNumber: (raw: string) => 'added' | 'duplicate' | 'invalid';
+  removeWatchlistNumber: (number: string) => void;
+  setCallProtectionEnabled: (value: boolean) => void;
   markSafe: (messageId: string) => void;
   toggleInclude: (evidenceId: string) => void;
   setDisguisedMode: (value: boolean) => void;
@@ -145,6 +157,9 @@ export const useStore = create<StoreState>()(
       messages: [],
       evidence: [],
       corrections: [],
+      callRecordings: [],
+      watchlist: [],
+      callProtectionEnabled: false,
 
       completeOnboarding: () => {
         set({ hasOnboarded: true });
@@ -269,6 +284,64 @@ export const useStore = create<StoreState>()(
         return message;
       },
 
+      addCallRecording: async (payload) => {
+        const existing = get().callRecordings.find((item) => item.id === payload.id);
+        if (existing) return existing;
+        if (!payload.audioPath || !payload.audioSha256) return null;
+
+        const base = {
+          id: payload.id,
+          callerNumber: payload.callerNumber || 'Unknown number',
+          startedAt: new Date(payload.startedAt).toISOString(),
+          endedAt: new Date(payload.endedAt).toISOString(),
+          durationMs: payload.durationMs,
+          audioPath: payload.audioPath,
+          audioSha256: payload.audioSha256,
+          mimeType: payload.mimeType || 'audio/mp4',
+          fileSize: payload.fileSize,
+          addedAt: new Date().toISOString(),
+          includeInReport: true,
+          source: 'call-watchlist' as const,
+        };
+
+        const sha256 = await sealCallRecording(base);
+        const recording: CallRecording = { ...base, sha256 };
+
+        const raced = get().callRecordings.find((item) => item.id === payload.id);
+        if (raced) return raced;
+
+        set((state) => ({ callRecordings: [recording, ...state.callRecordings] }));
+        return recording;
+      },
+
+      removeCallRecording: (id) => {
+        set((state) => ({
+          callRecordings: state.callRecordings.filter((item) => item.id !== id),
+        }));
+      },
+
+      toggleCallInclude: (id) => {
+        set((state) => ({
+          callRecordings: state.callRecordings.map((item) =>
+            item.id === id ? { ...item, includeInReport: !item.includeInReport } : item,
+          ),
+        }));
+      },
+
+      addWatchlistNumber: (raw) => {
+        if (!isValidPhoneNumber(raw)) return 'invalid';
+        const number = normalizePhoneNumber(raw);
+        if (get().watchlist.includes(number)) return 'duplicate';
+        set((state) => ({ watchlist: [number, ...state.watchlist] }));
+        return 'added';
+      },
+
+      removeWatchlistNumber: (number) => {
+        set((state) => ({ watchlist: state.watchlist.filter((item) => item !== number) }));
+      },
+
+      setCallProtectionEnabled: (value) => set({ callProtectionEnabled: value }),
+
       addSharedScreenshot: async (input) => {
         const text = input.text.trim();
         if (!text) return null;
@@ -359,6 +432,9 @@ export const useStore = create<StoreState>()(
           messages: [],
           evidence: [],
           corrections: [],
+          callRecordings: [],
+          watchlist: [],
+          callProtectionEnabled: false,
         });
       },
     }),
@@ -372,6 +448,9 @@ export const useStore = create<StoreState>()(
         messages: state.messages,
         evidence: state.evidence,
         corrections: state.corrections,
+        callRecordings: state.callRecordings,
+        watchlist: state.watchlist,
+        callProtectionEnabled: state.callProtectionEnabled,
       }),
     },
   ),

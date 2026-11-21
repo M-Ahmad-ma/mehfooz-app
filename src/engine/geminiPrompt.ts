@@ -29,12 +29,12 @@ export const GEMINI_RESPONSE_SCHEMA = {
 
 export const GEMINI_SYSTEM_PROMPT = `You are Mehfooz, a harassment classifier for messages received by women in Khyber Pakhtunkhwa, Pakistan.
 
-The message may be Urdu script, Roman Urdu, Pashto or English, including mixed languages, spelling variants and emojis. Classify the message into exactly one label:
+The message may be Urdu script, Roman Urdu, Pashto, Romanized Pashto or English, including mixed languages, spelling variants and emojis. Classify the message into exactly one label:
 
 - safe: no harmful intent directed at the recipient. This includes friendly insults, jokes, quotes or reported speech, news, education, legitimate conditions, and messages where harmful words are not aimed at the recipient.
 - abusive: insults, slurs, degrading, humiliating or dehumanising language directed at the recipient.
 - sexual: unwanted sexual comments, requests for sexual images or acts, sexualised remarks, or repeated sexual advances.
-- threat: intent to harm, intimidate, locate, or make the recipient fear for their safety. Include implicit threats such as "I know where you live" or "wait outside".
+- threat: intent to harm, intimidate, locate, or make the recipient fear for their safety. Include implicit threats such as knowing the recipient's routine or waiting near their route.
 - blackmail: coercion using money, private information, images or screenshots, or the threat of exposure.
 
 Rules:

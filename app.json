@@ -36,7 +36,10 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 132
         }
-      ]
+      ],
+      "expo-mail-composer",
+      "expo-audio",
+      "expo-asset"
     ]
   }
 }

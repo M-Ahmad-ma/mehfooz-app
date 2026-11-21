@@ -16,7 +16,7 @@ import {
   isGeminiConfigured,
 } from '@/engine/geminiClassifier';
 import { useStore } from '@/store/useStore';
-import type { IncomingNotification, PendingShare } from '@/types';
+import type { IncomingNotification, PendingCallRecording, PendingShare } from '@/types';
 
 /**
  * Lives at the root of the app. Drains the native notification queue, reacts
@@ -30,14 +30,26 @@ export function IncomingBridge() {
 
   const liveMode = useStore((state) => state.liveMode);
   const addIncoming = useStore((state) => state.addIncoming);
+  const addCallRecording = useStore((state) => state.addCallRecording);
+  const watchlist = useStore((state) => state.watchlist);
   const setPendingShare = useStore((state) => state.setPendingShare);
   const processing = useRef(new Set<string>());
+  const processingCalls = useRef(new Set<string>());
 
   useEffect(() => {
     if (isNativeAvailable) {
       setLiveCaptureEnabled(liveMode);
     }
   }, [liveMode]);
+
+  useEffect(() => {
+    if (!isNativeAvailable || !mehfoozNative) return;
+    try {
+      mehfoozNative.setCallWatchlist(watchlist);
+    } catch {
+      // The native watchlist is best-effort.
+    }
+  }, [watchlist]);
 
   useEffect(() => {
     if (!isNativeAvailable || !mehfoozNative || !isGeminiConfigured) return;
@@ -84,6 +96,32 @@ export function IncomingBridge() {
       }
     }
 
+    async function processCall(payload: PendingCallRecording) {
+      if (!payload?.id || processingCalls.current.has(payload.id)) return;
+      processingCalls.current.add(payload.id);
+
+      try {
+        await addCallRecording(payload);
+        native.acknowledgeCallRecordings([payload.id]);
+      } catch {
+        // Leave the recording in the native queue for the next retry.
+      } finally {
+        processingCalls.current.delete(payload.id);
+      }
+    }
+
+    async function drainCalls() {
+      try {
+        const pending = await native.getPendingCallRecordings();
+        for (const item of pending) {
+          if (cancelled) return;
+          await processCall(item);
+        }
+      } catch {
+        // Best-effort queue; the next foreground pass retries.
+      }
+    }
+
     async function checkShare() {
       try {
         const share = await getPendingShare();
@@ -102,6 +140,7 @@ export function IncomingBridge() {
     }
 
     void drain();
+    void drainCalls();
     void checkShare();
 
     const notificationSubscription = native.addListener('onNotification', (payload) => {
@@ -116,9 +155,19 @@ export function IncomingBridge() {
       }
     });
 
+    let callSubscription: { remove: () => void } | null = null;
+    try {
+      callSubscription = native.addListener('onCallRecording', (payload) => {
+        void processCall(payload);
+      });
+    } catch {
+      // Older native builds do not expose the call event yet.
+    }
+
     const appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         void drain();
+        void drainCalls();
         void checkShare();
       }
     });
@@ -127,9 +176,10 @@ export function IncomingBridge() {
       cancelled = true;
       notificationSubscription.remove();
       shareSubscription.remove();
+      callSubscription?.remove();
       appStateSubscription.remove();
     };
-  }, [addIncoming, router, setPendingShare]);
+  }, [addCallRecording, addIncoming, router, setPendingShare]);
 
   return null;
 }

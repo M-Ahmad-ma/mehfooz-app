@@ -12,13 +12,20 @@ The app is a prototype. The story is real. Keep the two separate.
 3. Send one WhatsApp message from the second phone and confirm it appears in the shield feed with a
    Gemini or local-fallback classifier badge. Share one screenshot into Mehfooz and confirm OCR +
    text classification work.
-4. Reset the demo: **Settings → Reset demo → Reset**, then walk through onboarding once. Re-enable
+4. Open **Evidence pack → Send to NCCIA**. Confirm the mail draft has `helpdesk@nccia.gov.pk`, the
+   prefilled complaint summary and the PDF attached. **Cancel the draft**; nothing is sent by the
+   app.
+5. Reset the demo: **Settings → Reset demo → Reset**, then walk through onboarding once. Re-enable
    live capture if you reset after step 3.
-5. With the app killed, send one prefiltered threat from the second phone. Confirm the Mehfooz
-   notification with the app icon appears; tap it and confirm the flagged feed opens. Then run the
-   full 60 seconds on Wi-Fi. The demo feed does not need the network; Gemini does.
-6. Record a 60-second screen capture and keep it on the laptop and the phone.
-7. Keep a low-quota key in the build, and rotate it after the pitch. Never commit `.env`.
+6. With the app killed, send a threat from the second phone. With internet, native Gemini should
+   catch it even if the static prefilter does not know the phrase. Confirm the Mehfooz notification
+   with the app icon appears; tap it and confirm the flagged feed opens. Then run the full 60
+   seconds on Wi-Fi. The demo feed does not need the network; Gemini does.
+7. Optional call test: add a watchlisted number, call from the second phone, answer and hang up.
+   Confirm the recording appears in **Vault → Call recordings**. Check whether the audio contains
+   the remote voice; if not, only mention this feature if a judge asks.
+8. Record a 60-second screen capture and keep it on the laptop and the phone.
+8. Keep a low-quota key in the build, and rotate it after the pitch. Never commit `.env`.
 
 ## The 60-second live run
 
@@ -30,11 +37,16 @@ The app is a prototype. The story is real. Keep the two separate.
 | 0:23 | Open the shield card / threat | “Nothing is deleted. She can review the original and correct a mistake.” |
 | 0:30 | Share a Roman Urdu screenshot into Mehfooz | “Screenshots go through OCR on the phone, then the same classifier.” |
 | 0:38 | Seal the screenshot; open the vault | “The text and the image each get a SHA-256 seal.” |
-| 0:47 | Verify the hash; build the report | “One tap builds a complaint pack: evidence, hashes and NCCIA steps.” |
-| 0:56 | Show the PDF / close | “From a harmful message to a filable complaint in under two minutes.” |
+| 0:47 | Verify the hash; build the report → **Send to NCCIA** | “One tap builds the pack and opens her email app with NCCIA’s address and the PDF attached.” |
+| 0:56 | Show the mail draft with the attachment; **cancel** | “She reviews it and sends. From harm to a filable complaint in under two minutes.” |
 
 If OCR on the screenshot is slow, skip the screenshot beat. The threat notification and report are
 the core story.
+
+Optional call beat, only if it worked in rehearsal: **Settings → Call protection → Call watchlist**
+add the second phone, call it, answer/hang up, then show **Vault → Call recordings**. If the
+recording is silent or one-sided, say the device limits call audio and skip it.
+
 
 ## Fallback: scripted feed
 
@@ -48,8 +60,8 @@ Use this if notification access, the second phone or the share sheet fails.
 | 0:22 | **View shielded messages → the threat → Mark safe** | “If it gets it wrong, she corrects it; that becomes a training label.” |
 | 0:30 | **Simulate incoming message → Blackmail** | “The false positive is excluded from the report; a real threat is still sealed.” |
 | 0:38 | **Vault → blackmail record → Verify hash** | “The text and timestamp are sealed with SHA-256 on her phone.” |
-| 0:47 | **Build evidence pack → Generate PDF** | “One tap builds a complaint pack: evidence, hashes and NCCIA steps.” |
-| 0:55 | Show the PDF share sheet / page 1 | “From harm to a filable complaint in under two minutes.” |
+| 0:47 | **Build evidence pack → Generate PDF** (or **Send to NCCIA**) | “One tap builds a complaint pack: evidence, hashes and NCCIA steps.” |
+| 0:55 | Show the PDF share sheet / page 1, or the mail draft with the PDF attached | “From harm to a filable complaint in under two minutes.” |
 | 0:59 | **Scan → Pashto sample** (optional) | “Shared screenshots go through OCR, then the same pipeline.” |
 
 If you skip the correction, the original threat record stays included; generate the PDF after the
@@ -82,22 +94,26 @@ message passed” while it is visible. Do not expect a card for it.
   database or chat history. Android only.”
 - “The notification is dismissed just after it is posted. Android does not let an app intercept it
   before display.”
-- “A small native pre-filter hides obvious threats while the app is closed; the full classifier runs
-  when she opens the app.”
+- “While the app is closed, native Gemini checks captured notifications when online; the static
+  prefilter is the offline fallback. The full pipeline runs again when she opens the app.”
 - “The vault is local and hash-sealed. Encrypted storage is the next milestone.”
 - “The notification prefilter and OCR run on the phone. Gemini receives only text, never the
   screenshot image. Local rules are the fallback.”
-- “When the app is closed and the native prefilter catches a high-confidence threat, Mehfooz posts
-  its own alert with the app icon. Tap it to open the flagged feed. It shows only the app and
-  category, never the message text.”
+- “When the app is closed and a harmful message is found, Mehfooz posts its own alert with the app
+  icon. Tap it to open the flagged feed. It shows only the app and category, never the message
+  text.”
+- “Call recording is an explicit watchlist feature. The user opts in, sees a recording notification,
+  and the audio stays local; Android may not expose the remote party’s voice.”
 - “The Gemini key is in this prototype APK; we use a low-quota key and rotate it after the pitch.
   Production needs a proxy or an on-device model.”
 - “Screenshots are shared explicitly through the Android share sheet. OCR runs on the phone; ML Kit
   handles Roman Urdu and English, Tesseract handles Urdu/Pashto and is experimental.”
 - “We call it a tamper-evident evidence pack, not legally valid evidence. NCCIA and the courts decide
   admissibility.”
-- “Our test set is 160 messages, balanced across languages, with hard negatives. The rules baseline
-  is 61.3%; the Gemini eval is separate. We report per-language numbers and Pashto honestly.”
+- “Our v2 test set is 400 balanced messages plus 100 hard-safe stress messages. It includes Roman
+  Pashto and implicit cases. The v1 160-message rules baseline was 61.3%; the harder v2 rules
+  baseline is 41.8% with 10% false positives on the safe stress set. Gemini is evaluated separately.
+  We report per-language, per-script and per-tag slices honestly.”
 - “The demo feed is pinned for the stage. The test set is not used in the prompt or for training.”
 
 ## Questions specific to this build
@@ -118,6 +134,17 @@ message passed” while it is visible. Do not expect a card for it.
 > correction loop. The demo-critical moments are pinned for reliability. The next step is replacing
 > the rules engine with the fine-tuned multilingual model behind the same interface.
 
+**Can it record calls?**
+> Yes, for numbers the user explicitly adds to a watchlist. It detects the incoming call, records
+> locally after she answers, and shows a visible notification. Android may allow only microphone or
+> room audio, not both sides of a cellular call; we test on the device and do not claim otherwise.
+> Recording is opt-in and must comply with consent and privacy law.
+
+**How does she actually file it?**
+> **Evidence pack → Send to NCCIA** opens her own mail app with `helpdesk@nccia.gov.pk`, a case
+> reference and the PDF attached. She reviews the draft and sends it herself. The app never emails
+> anyone automatically.
+
 **Why use Gemini if privacy matters?**
 > It is an accuracy experiment, not the production design. OCR, the notification prefilter and the
 > local rules stay on the phone. Gemini sees text only, with consent and a fallback. Production
@@ -133,9 +160,10 @@ message passed” while it is visible. Do not expect a card for it.
 > authoritative.
 
 **How accurate is Gemini?**
-> We will report the real number from the 160-message test set, per language and category. It is
-> not calibrated confidence, and Pashto remains the weakest language. If Gemini refuses or fails,
-> the local rules result is labelled as fallback.
+> We will report the real number from the 400-message v2 core, per language, category and tag. The
+> 100-message hard-safe stress set is reported separately as a false-positive rate. Confidence is
+> not calibrated, and Pashto — especially Roman Pashto — remains the weakest slice. If Gemini
+> refuses or fails, the local rules result is labelled as fallback.
 
 **What happens if she loses her phone?**
 > The evidence is local. Production would add an encrypted backup that she controls. We are not
@@ -161,7 +189,10 @@ message passed” while it is visible. Do not expect a card for it.
 - “The evidence is legally valid.”
 - “The model is trained and accurate on Pashto.”
 - “Tesseract Urdu/Pashto is accurate” — it is experimental and the transcript is editable.
-- Any “100% accurate” claim — the 160-message set gives the rules baseline 61.3%; the Gemini eval is separate.
+- “It emails NCCIA automatically” — it opens a draft with the PDF attached; the user sends it.
+- “It records both sides of every call” — Android may block call audio; only watchlisted calls are
+  attempted, and the result is device-dependent.
+- Any “100% accurate” claim — the v2 rules baseline is 41.8% on 400 core messages, with 10% false positives on 100 hard-safe messages; the Gemini eval is separate. Do not quote the old v1 61.3% as current.
 - “Every harmful message alerts with 100% accuracy while closed” — Gemini covers captured notifications when online; the static prefilter is the limited offline fallback.
 - “It is fully encrypted.”
 - “It is available on iPhone.”

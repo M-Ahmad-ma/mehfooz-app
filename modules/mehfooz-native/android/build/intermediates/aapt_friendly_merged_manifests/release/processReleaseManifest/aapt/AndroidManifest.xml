@@ -4,6 +4,13 @@
 
     <uses-sdk android:minSdkVersion="24" />
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
     <application>
         <service
             android:name="expo.modules.mehfooznative.MehfoozNotificationService"
@@ -14,6 +21,11 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <service
+            android:name="expo.modules.mehfooznative.CallRecordingService"
+            android:exported="false"
+            android:foregroundServiceType="microphone"
+            android:stopWithTask="false" />
 
         <activity
             android:name="expo.modules.mehfooznative.ShareActivity"

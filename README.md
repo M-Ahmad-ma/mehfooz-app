@@ -1,12 +1,34 @@
 # Mehfooz — prototype
 
-**An AI shield that understands Urdu, Roman Urdu and Pashto.**
+**An AI shield that understands Urdu, Roman Urdu, Pashto and Romanized Pashto.**
 Mehfooz screens message notifications on Android, hides harmful content, seals the evidence with
 SHA-256, and builds a complaint-ready PDF. Screenshots shared into the app go through on-device OCR
-and the same pipeline.
+and the same pipeline. The latest build also supports a user-managed **call watchlist**, local
+call recording, audio evidence playback, and NCCIA email drafts with the PDF and selected audio
+attached.
 
-The app is a prototype, not a production product. The scripted demo feed remains available as a
-reliable stage fallback.
+The app is a prototype, not a production product. Android may not expose cellular call audio to a
+third-party app; call recording is best-effort and device-dependent. The scripted demo feed remains
+available as a reliable stage fallback.
+
+---
+
+## Latest features in this build
+
+- **Harmful-only shield feed** — safe messages are stored but never shown as cards; friendly-context
+  demos are toast-only.
+- **Background Gemini alerts** — the native notification service classifies captured text with
+  Gemini when online and falls back to a compact prefilter, including Romanized Pashto markers.
+- **Watchlisted call recording** — add numbers in Settings, keep a visible foreground service on,
+  and record incoming cellular calls locally after answer. Audio is sealed with SHA-256.
+- **Call evidence in the vault** — play recordings, verify the vault and audio-file hashes, include
+  them in reports, or delete them.
+- **NCCIA email draft** — opens the device mail app with `helpdesk@nccia.gov.pk`, a prefilled case
+  summary, the PDF, and selected call audio attached. The app never sends the email itself.
+- **Expanded v2 evaluation** — 400 balanced core messages plus 100 hard-safe stress messages,
+  including Romanized Pashto and implicit cases.
+- **Pipeline reference** — see [`AI_PIPELINE.md`](./AI_PIPELINE.md) for the foreground, native
+  background, screenshot, and call-recording flows.
 
 ---
 
@@ -15,10 +37,11 @@ reliable stage fallback.
 | Area | In this prototype | Production path |
 |---|---|---|
 | Message source | Android `NotificationListenerService` on the installed build, with Notification access; scripted demo feed fallback | Same listener, broader app coverage and Play Store disclosure |
-| Classifier | Local rules + optional Gemini Flash-Lite for live text (direct API, rules fallback) | Fine-tuned on-device multilingual model |
+| Classifier | Local rules + optional Gemini 3.5 Flash-Lite for live text (direct API, rules fallback) | Fine-tuned on-device multilingual model |
 | Shield | Harmful messages hidden in the app; background Gemini/prefilter can dismiss notifications; full classifier on app open | Native/on-device model running continuously in the service |
 | Background alert | Native Android alert; Gemini checks every captured notification when configured and online; the static prefilter is the offline fallback; app + category, no message text | Same, with a better on-device model |
-| Evidence store | Local AsyncStorage + image files; text and screenshot SHA-256 | Encrypted SQLite, chain-of-custody export |
+| Evidence store | Local AsyncStorage + image and audio files; text, screenshot and call-recording SHA-256 | Encrypted SQLite, chain-of-custody export |
+| Call recording | User-managed watchlist; incoming-call detection; local microphone/room recording with SHA-256; remote-party audio is device-dependent | OEM/privileged call audio or a consent-based manual recorder |
 | Screenshot check | Android share sheet; ML Kit Latin for Roman Urdu/English; Tesseract `urd`/`pus` for Urdu/Pashto | Better Urdu/Pashto OCR model and confidence-based review |
 | Disguise | In-app header changes to “Notes” | Native launcher icon/name change |
 | Voice guide | Text help in Urdu, Pashto and English | Recorded/neural Urdu + Pashto audio |
@@ -39,8 +62,10 @@ cp .env.example .env
 npx expo start
 ```
 
-Expo Go runs the **demo feed only**. The live notification listener, share-sheet intake, and real
-OCR are custom native code and require an Android development build or APK.
+Expo Go runs the **demo feed only**. The live notification listener, share-sheet intake, real OCR,
+call recording, and audio playback are custom native code and require an Android development build
+or APK. The call feature also needs the new microphone, phone-state, call-log and foreground-service
+permissions.
 
 **Gemini key warning:** with no proxy, `EXPO_PUBLIC_GEMINI_API_KEY` is embedded in the APK and can be
 extracted. Use a low-quota key, never commit `.env`, and rotate the key after the pitch. Without a
@@ -78,8 +103,13 @@ first.
    classified by Gemini and falls back to local rules on timeout/refusal.
 6. Share a screenshot from WhatsApp, Instagram or the gallery and choose **Mehfooz** in the share
    sheet. OCR stays local; the transcript goes to Gemini when configured.
+7. For calls: open **Settings → Call protection**, add a number to the **Call watchlist**, grant
+   microphone, phone state, call log and notification access, then enable call recording. Android
+   shows a visible recording notification; test on the demo device before relying on it.
+8. Call from a watchlisted number, answer, and hang up. The recording appears in **Vault → Call
+   recordings** with a SHA-256 seal and can be included in the PDF/email.
 
-Web (`npm run web`) is a demo-feed fallback only.
+Web (`npm run web`) is a demo-feed fallback only. Call recording is Android-only.
 
 ---
 
@@ -95,8 +125,8 @@ Web (`npm run web`) is a demo-feed fallback only.
 | 0:23 | Open the shield card / threat record | “Nothing is deleted. She can review the original and correct a mistake.” |
 | 0:30 | Share a Roman Urdu screenshot into Mehfooz | “Screenshots go through OCR on the phone, then the same classifier.” |
 | 0:38 | Seal the screenshot; open the vault | “The text and the image each get a SHA-256 seal.” |
-| 0:47 | Verify the hash; build the report | “One tap produces the complaint pack: evidence, hashes, NCCIA steps.” |
-| 0:56 | Show the PDF / close | “From harm to a filable complaint in under two minutes.” |
+| 0:47 | Verify the hash; build the report → **Send to NCCIA** | “One tap builds the pack and opens her email app with NCCIA’s address and the PDF attached.” |
+| 0:56 | Show the mail draft / PDF; cancel | “She reviews it and sends. From harm to a filable complaint in under two minutes.” |
 
 ### Fallback version
 
@@ -109,7 +139,10 @@ The scripted feed has the same beats without needing a second phone or notificat
 4. **Vault → verify hash**
 5. **Build evidence pack → Generate PDF**
 
-A longer cue sheet with fallbacks is in [`DEMO.md`](./DEMO.md).
+Optional call beat, only if it worked in rehearsal: add a number to **Call protection → Call
+watchlist**, call it, answer/hang up, then show **Vault → Call recordings**. If the audio is silent
+or one-sided, say Android limits call audio and skip it. A longer cue sheet with fallbacks is in
+[`DEMO.md`](./DEMO.md).
 
 ---
 
@@ -118,25 +151,29 @@ A longer cue sheet with fallbacks is in [`DEMO.md`](./DEMO.md).
 ```
 src/app/                    expo-router screens and the tab shell
   (tabs)/index.tsx          Shield inbox, live status, demo feed
-  (tabs)/vault.tsx          Evidence list and report selection
+  (tabs)/vault.tsx          Message + call evidence list and report selection
   (tabs)/screenshot.tsx     Bundled OCR samples + shared-screenshot entry
-  (tabs)/settings.tsx       Live protection, disguise, limits, reset
+  (tabs)/settings.tsx       Live protection, call protection, disguise, limits, reset
   shared-screenshot.tsx     Real share-sheet intake, OCR, seal
   vault/[id].tsx            Evidence detail, hash verification, screenshot image
   report.tsx                PDF preview + generation
+  call-watchlist.tsx        Add/remove numbers for call recording
+  call/[id].tsx             Playback, hash verification, delete call evidence
   help.tsx                  Urdu / Pashto / English rights guidance
-src/components/             UI primitives; IncomingBridge; LiveStatusCard
+src/components/             UI primitives; IncomingBridge; CallPlayer; CallRecordingCard
 src/engine/                 normalizer, lexicon, rules classifier, Gemini prompt/client, eval
-src/data/                   demo scenarios, screenshot samples, 160-message eval set, complaint copy
+src/data/                   demo scenarios, screenshot samples, 400-message eval set + hard-safe stress set, complaint copy
 src/native/mehfoozNative.ts Safe JS wrapper for the Kotlin module
 src/store/useStore.ts       Zustand store + AsyncStorage persistence
-src/lib/                    hash, PDF, report HTML, formatting, links, haptics
+src/lib/                    hash, PDF/email, report HTML, phone normalization, formatting, links, haptics
 modules/mehfooz-native/     Kotlin Expo module
   MehfoozNotificationService.kt   NotificationListenerService + queue + pre-filter
   ShareActivity.kt                Android share target for screenshots
   OcrEngine.kt                    ML Kit Latin + Tesseract Urdu/Pashto
   ImageTools.kt                   Image hash + PDF thumbnail
   IncomingStore.kt                Persisted queue and pending share
+  CallStore.kt                    Call watchlist and pending recordings
+  CallRecordingService.kt         Foreground call watcher + local recorder
 ```
 
 ---
@@ -172,15 +209,48 @@ modules/mehfooz-native/     Kotlin Expo module
 - No silent gallery scanning, accessibility service or screen capture. Screenshots are explicitly
   shared.
 
+**Phone calls**
+
+- The user adds numbers to a watchlist. Numbers are normalized (`0300…`, `+92300…`, `0092300…`)
+  before matching. Only **cellular incoming calls** from those numbers are considered;
+  WhatsApp/Instagram voice calls are not covered.
+- A persistent foreground service watches phone state and records locally after the call is
+  answered. It shows a visible recording notification.
+- Android 10+ does not give ordinary apps access to the cellular call audio stream. The prototype
+  attempts `VOICE_COMMUNICATION`, then `MIC`; it may capture only the local side/room, or nothing.
+  A device test is required before claiming remote-party audio.
+- OEM battery savers may kill the foreground service. For a demo, disable battery optimization for
+  Mehfooz and open the app once after a reboot.
+- `READ_PHONE_STATE` and `READ_CALL_LOG` are sensitive permissions. `READ_CALL_LOG` is restricted
+  for Play Store distribution; this is a sideloaded prototype.
+- Some OEMs/carriers hide the incoming number from the phone-state broadcast. The next fallback is
+  the Android call-screening role; that is not wired in this version, so test number matching on
+  the demo device first.
+- Call recording is opt-in. Record only calls you are part of and inform the other person where
+  required. Audio stays local, is SHA-256 sealed and can be included in the PDF/email.
+- There is no boot receiver in this version: after a reboot, open Mehfooz once to restart the
+  foreground service.
+- Call protection shows a persistent “Mehfooz call protection” notification. This is required for
+  a foreground recorder and is not compatible with a fully hidden/disguised mode.
+- Speakerphone may improve room capture on some devices, but Android can still silence the mic
+  during a cellular call. Test before promising it in the pitch.
+
 ---
 
 ## Classifier
 
-`classify(text)` is the local rules engine. Live messages and shared-screenshot transcripts use
-`classifyWithFallback()`:
+`classify(text)` is the local rules engine. There are three classification paths:
 
-1. Gemini Flash-Lite if `EXPO_PUBLIC_GEMINI_API_KEY` is configured;
-2. local rules on timeout, network failure, safety refusal, invalid JSON or HTTP error.
+1. **Foreground JS** — live messages and shared-screenshot transcripts use `classifyWithFallback()`:
+   Gemini 3.5 Flash-Lite first, then local rules on timeout, network failure, safety refusal,
+   invalid JSON or HTTP error.
+2. **Native background** — the notification service uses `BackgroundGemini` to decide whether to
+   dismiss a notification/post an alert while the app is closed, with `PreFilter.kt` as the offline
+   fallback.
+3. **Scripted demo** — pinned results or local rules only; no network dependency.
+
+The full pipeline, including native background and screenshot/call evidence paths, is documented in
+[`AI_PIPELINE.md`](./AI_PIPELINE.md).
 
 The five labels are `safe`, `abusive`, `sexual`, `threat`, `blackmail`. Rules normalization handles
 Roman Urdu leetspeak, repeated characters, Arabic-script variants, diacritics and punctuation.
@@ -193,22 +263,52 @@ also uncalibrated.
 
 ### Evaluation
 
-The test set is now **160 messages**: 32 per category, 40 per language, including hard negatives and
-adversarial cases. It is not used in the prompt or for training.
+The v2 benchmark is **400 core messages + 100 hard-safe stress messages**:
+
+- **400 core**: 20 per category and language, 80 per category and 100 per language.
+- **Pashto**: 60 Arabic-script messages and 40 Romanized Pashto messages, reported separately.
+- **100 stress**: all safe, 25 per language, deliberately full of keyword traps such as “I will
+  kill you in Ludo”, “watch your back, the stairs are wet” and “I will find you a mechanic”. This
+  is reported as a false-positive rate, not mixed into the headline F1.
+- v2 rows carry an `id`, phenomenon `tags`, a difficulty label and a Pashto script variant.
+- The original 160-message v1 set is preserved in `evalMessages.ts`. v2 combines it with 240 new
+  messages in `evalMessagesV2.ts`; `evalV2Core.ts` and `safeStressMessages.ts` hold the additions.
 
 ```bash
-npm run eval          # local rules
-npm run eval:gemini   # same test set through Gemini + fallback; needs a key
+npm run eval                         # rules on 400 core + 100 stress
+npm run eval:gemini                  # Gemini on 400 core
+EVAL_STRESS=1 npm run eval:gemini    # also run the 100-message stress set
 ```
 
-The rules engine scores **61.3%** on this harder set. That is expected: it was built with a small
-lexicon, and safe hard negatives (idioms, quotes, reported speech) are difficult for keyword rules.
-Do not quote 100% from the old 40-message sanity set; it is obsolete. The Gemini eval prints
-per-language/category F1, confusion, latency, refusals and fallback rate. Report those numbers,
-whatever they are. Pashto is low-resource; do not claim otherwise.
+The rules engine scores **41.8% accuracy / 0.44 macro-F1** on the v2 core (95% bootstrap CI
+37.0–46.3%) and **10.0% false positives** on the hard-safe stress set. That is expected: the new
+set is intentionally less keyword-saturated, includes implicit threats, Roman Pashto and hard
+negatives, and the local engine is a small hand-built baseline. The old v1 score was **61.3%** on
+160 messages; it is archived for comparison, not the current headline. Do not quote 100% from the
+old 40-message sanity set.
 
-The Gemini test set is disjoint from the prompt. The `eval:gemini` script deliberately delays
-requests; raise `EVAL_DELAY_MS` if the fallback count is high from rate limiting.
+The Gemini eval prints macro-F1, per-language and per-script results, tag slices, confidence
+intervals, confusion, latency, refusals and fallback rate. Report those numbers, whatever they are.
+Pashto is low-resource; Roman Pashto is currently the weakest slice. The core set is not used in
+the prompt or for training; the prompt’s former “I know where you live” example was removed to
+avoid an exact overlap.
+
+The `eval:gemini` script deliberately delays requests; raise `EVAL_DELAY_MS` if the fallback count
+is high from rate limiting. The stress set is skipped by default on Gemini runs because it adds 100
+extra requests. `EVAL_LIMIT=20` is available for a quick smoke test.
+
+**Label policy:**
+
+- Classify the intent directed at the recipient, not the words alone.
+- Quoted or reported harassment, news, education, venting, friendly insults and legitimate
+  conditions are safe unless they are directed at the recipient with harmful intent.
+- Precedence: threat > blackmail > sexual > abusive > safe.
+- Blackmail requires leverage plus a demand; pure intimidation without a demand is threat.
+- Stalking, routine knowledge and location references are threat.
+- Consensual flirtation is safe; unwanted or repeated sexual pressure is sexual.
+- A one-off friendly insult is safe; sustained degrading or humiliating language is abusive.
+- Romanized Pashto is treated as Pashto and reported as a separate script slice.
+- Ambiguous rows should be reviewed by a native Urdu/Pashto speaker before the set is frozen.
 
 Corrections made with “This was a mistake — mark safe” are stored in the app and shown in
 Settings. They are the seed of the retraining loop.
@@ -217,19 +317,26 @@ Settings. They are the seed of the retraining loop.
 
 ## Report and support details
 
-The PDF is generated locally with `expo-print` and shared with `expo-sharing`. It contains:
+The PDF is generated locally with `expo-print` and shared with `expo-sharing`. The **Send to
+NCCIA** / **Email NCCIA** action uses `expo-mail-composer` to open the device mail app with
+`helpdesk@nccia.gov.pk`, a prefilled complaint summary, the PDF and selected call audio attached.
+The app never sends the email; the user reviews the draft and taps send in their own mail app.
+The PDF contains:
 
 - incident summary, sender list and date range;
 - every selected message with sender, timestamp, category, confidence and classifier source;
 - full text SHA-256 and canonical string per record;
 - screenshot thumbnail and image SHA-256 when a shared image is included;
-- NCCIA complaint steps and portal;
+- selected call recordings with caller number, timestamp, duration, vault SHA-256 and audio-file
+  SHA-256; the audio files are attached separately to the NCCIA email;
+- NCCIA complaint steps, portal, email and helpline;
 - DRF helpline;
 - integrity, PECA and legal notes.
 
 Verified in **November 2026**:
 
 - NCCIA complaint portal: <https://complaint.nccia.gov.pk>
+- NCCIA complaint email: **helpdesk@nccia.gov.pk**
 - NCCIA helpline: **1799**
 - NCCIA website: <https://www.nccia.gov.pk>
 - DRF helpline: **0800-39393** (free, confidential, daily 9am–5pm)
@@ -257,24 +364,38 @@ advice.
   (Tesseract). Record real OCR accuracy; edit the transcript.
 - Confirm the classifier badge shows Gemini, local rules or fallback correctly.
 - Verify the text hash and the image hash in the vault.
+- Add a watchlisted number, call it from the second phone, answer/hang up, and confirm the recording
+  appears in **Vault → Call recordings** with a playable file and both hashes.
+- Call from a non-watchlisted number and confirm no recording is created.
+- Test a missed/rejected call, screen locked, app backgrounded and app killed. Record whether the
+  file contains both sides, only the local side, or silence.
+- Include the call recording in the PDF and NCCIA draft; confirm the audio is attached and the PDF
+  contains the metadata/hashes.
 - Generate the PDF with a screenshot included; confirm the thumbnail and image hash appear.
+- Tap **Send to NCCIA** with Gmail or another mail app installed; confirm the recipient, subject,
+  body, PDF and selected call-audio attachments are prefilled. Cancel the draft; confirm nothing
+  was sent.
 - Run the whole demo twice on a release APK; test once with the network off to confirm fallback.
 - Run `npm run eval:gemini` with a key and record the real numbers.
 
-The Android build has not been executed in this workspace. The TypeScript layer type-checks and
-Expo Doctor passes; the Kotlin/Gradle build and device tests still need to run on the demo machine.
+`expo-mail-composer`, `expo-audio`, the call-recording foreground service and the new permissions
+are native code, so the call feature only works after a fresh development/release build. The
+TypeScript layer type-checks and Expo Doctor passes; re-run the device tests after the dependency
+change. The app opens a mail draft and never submits it automatically.
 
 ---
 
 ## Reset and demo reliability
 
-- **Settings → Reset demo** clears messages, evidence, corrections, the native capture queue and
-  the pending share, and returns to onboarding.
+- **Settings → Reset demo** clears messages, evidence, corrections, call-recording vault entries and
+  the call watchlist, plus the native capture queue and pending share, and returns to onboarding. It
+  also stops call protection. Audio files already written to app storage are removed only when the
+  app is uninstalled or its data is cleared.
 - OCR, the notification prefilter, the local rules engine, vault and PDF generation are local.
 - Background alerts use native Gemini for every captured notification when configured and online.
-  The static prefilter (now with Romanized Pashto markers) is the offline fallback. Without a key,
-  network or notification permission, only prefiltered messages alert; the original notification
-  stays for the rest so the user has context. The app reclassifies on open.
+  The static prefilter (now with Romanized Pashto markers) is the offline fallback. Without a key or
+  network, the prefilter can still alert. Without notification permission, Mehfooz cannot post its
+  own alert, so the original notification stays for context. The app reclassifies on open.
   Gemini classification requires internet; without a key or network the app uses local rules.
 - The **demo feed** is fully offline and is the recommended stage fallback. Expo Go still fetches
   the JS bundle from Metro at launch.
@@ -301,7 +422,14 @@ Expo Doctor passes; the Kotlin/Gradle build and device tests still need to run o
 - Say **“background alerts use Gemini when online, with a static offline fallback”**. Do not claim
   every harmful message is detected with 100% accuracy; the model/prefilter can miss context.
 - The app alert contains the app + category only; it never puts the harmful text on the lock screen.
-- Say **“OCR and the notification prefilter are on-device; Gemini receives text only”**, not
-  “everything is on-device”.
+- Say **“OCR, the notification prefilter and call audio stay on-device; Gemini receives text
+  only”**, not “everything is on-device”.
+- Say **“call recording is opt-in, visible and device-dependent”**. Android 10+ may not give a
+  third-party app the remote party’s voice; do not promise two-sided recording without a device
+  test.
+- The call watchlist uses `READ_CALL_LOG` and `READ_PHONE_STATE`; those are sensitive permissions
+  and Play Store distribution needs a policy review. This is a sideloaded prototype.
+- PECA 2016 Section 23 and recent Pakistani case law around secret recordings make consent and
+  visibility important. Record only calls the user is part of, and get legal review before shipping.
 - The Gemini key is in the APK. Use a low-quota key, rotate it after the pitch, and never commit
   `.env`. Production needs a proxy or an on-device model.

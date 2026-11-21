@@ -1,15 +1,18 @@
 import { NativeModule, requireNativeModule } from 'expo';
 
 import type {
+  CallPermissions,
   ImagePayload,
   IncomingNotification,
   OcrResult,
+  PendingCallRecording,
   PendingShare,
 } from '@/types';
 
 type MehfoozNativeModuleEvents = {
   onNotification: (payload: IncomingNotification) => void;
   onShare: (payload: PendingShare) => void;
+  onCallRecording: (payload: PendingCallRecording) => void;
 };
 
 declare class MehfoozNativeModule extends NativeModule<MehfoozNativeModuleEvents> {
@@ -20,6 +23,17 @@ declare class MehfoozNativeModule extends NativeModule<MehfoozNativeModuleEvents
   requestAlertNotificationPermission(): boolean;
   setLiveCaptureEnabled(enabled: boolean): void;
   setBackgroundGeminiConfig(apiKey: string, model: string): void;
+  hasCallPermissions(): Promise<CallPermissions>;
+  requestCallPermissions(): boolean;
+  startCallProtection(): boolean;
+  stopCallProtection(): void;
+  isCallProtectionEnabled(): Promise<boolean>;
+  setCallWatchlist(numbers: string[]): void;
+  getCallWatchlist(): string[];
+  getPendingCallRecordings(): Promise<PendingCallRecording[]>;
+  acknowledgeCallRecordings(ids: string[]): void;
+  deleteCallRecording(path: string): boolean;
+  resetCallRecordingState(): void;
   isLiveCaptureEnabled(): boolean;
   setAllowedPackages(packages: string[]): void;
   getAllowedPackages(): string[];
@@ -88,6 +102,14 @@ export function acknowledgeNativeNotifications(ids: string[]): void {
 export function resetNativeCaptureState(): void {
   try {
     nativeModule?.resetCaptureState();
+  } catch {
+    // Ignore native state cleanup errors.
+  }
+}
+
+export function resetNativeCallRecordingState(): void {
+  try {
+    nativeModule?.resetCallRecordingState();
   } catch {
     // Ignore native state cleanup errors.
   }

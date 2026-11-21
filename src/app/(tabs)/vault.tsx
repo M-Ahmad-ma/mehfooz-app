@@ -4,9 +4,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { CallRecordingCard } from '@/components/CallRecordingCard';
 import { EmptyState } from '@/components/EmptyState';
 import { EvidenceCard } from '@/components/EvidenceCard';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useNcciaEmail } from '@/hooks/useNcciaEmail';
 import { useStore } from '@/store/useStore';
 import { colors, fonts, radius } from '@/theme';
 
@@ -14,10 +16,20 @@ export default function VaultScreen() {
   const router = useRouter();
   const evidence = useStore((state) => state.evidence);
   const corrections = useStore((state) => state.corrections);
+  const callRecordings = useStore((state) => state.callRecordings);
   const toggleInclude = useStore((state) => state.toggleInclude);
+  const toggleCallInclude = useStore((state) => state.toggleCallInclude);
+  const { emailing, send: sendToNccia } = useNcciaEmail();
 
   const included = evidence.filter((item) => item.includeInReport);
+  const includedCalls = callRecordings.filter((item) => item.includeInReport);
+  const totalIncluded = included.length + includedCalls.length;
   const correctedMessageIds = new Set(corrections.map((correction) => correction.messageId));
+
+  async function handleEmail() {
+    if (totalIncluded === 0 || emailing) return;
+    await sendToNccia(included, includedCalls);
+  }
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -41,10 +53,11 @@ export default function VaultScreen() {
           </View>
           <View style={styles.summaryText}>
             <Text style={styles.summaryValue}>
-              {evidence.length} {evidence.length === 1 ? 'record' : 'records'} sealed
+              {evidence.length} {evidence.length === 1 ? 'message' : 'messages'} ·{' '}
+              {callRecordings.length} {callRecordings.length === 1 ? 'call' : 'calls'} sealed
             </Text>
             <Text style={styles.summaryBody}>
-              Sender, timestamp, original text and a SHA-256 digest are stored together.
+              Text, recordings, timestamps and SHA-256 digests are stored together on this phone.
             </Text>
           </View>
           <View style={styles.localPill}>
@@ -59,11 +72,11 @@ export default function VaultScreen() {
           </Text>
         </View>
 
-        {evidence.length === 0 ? (
+        {evidence.length === 0 && callRecordings.length === 0 ? (
           <EmptyState
             icon="folder-open-outline"
             title="The vault is empty"
-            body="Harmful messages are sealed here automatically when they are detected."
+            body="Harmful messages and watchlisted call recordings are sealed here automatically."
             actionLabel="Open the demo feed"
             onAction={() => router.navigate('/')}
           />
@@ -79,6 +92,30 @@ export default function VaultScreen() {
           ))
         )}
 
+        {callRecordings.length > 0 ? (
+          <>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>Call recordings</Text>
+              <Text style={styles.sectionMeta}>
+                {includedCalls.length} of {callRecordings.length} selected
+              </Text>
+            </View>
+            {callRecordings.map((recording) => (
+              <CallRecordingCard
+                key={recording.id}
+                recording={recording}
+                onPress={() =>
+                  router.push({ pathname: '/call/[id]', params: { id: recording.id } })
+                }
+                onToggleInclude={() => toggleCallInclude(recording.id)}
+              />
+            ))}
+            <Text style={styles.noteText}>
+              Audio is recorded from this phone. Android may not capture the remote party’s voice.
+            </Text>
+          </>
+        ) : null}
+
         <View style={styles.note}>
           <Ionicons name="information-circle-outline" size={14} color={colors.muted} />
           <Text style={styles.noteText}>
@@ -87,17 +124,27 @@ export default function VaultScreen() {
         </View>
       </ScrollView>
 
-      {evidence.length > 0 ? (
+      {evidence.length > 0 || callRecordings.length > 0 ? (
         <View style={styles.footer}>
           <Button
             label={
-              included.length > 0
-                ? `Build evidence pack · ${included.length}`
+              totalIncluded > 0
+                ? `Build evidence pack · ${totalIncluded}`
                 : 'Select evidence to continue'
             }
             icon="document-text-outline"
-            disabled={included.length === 0}
+            disabled={totalIncluded === 0 || emailing}
             onPress={() => router.push('/report')}
+          />
+          <Button
+            variant="secondary"
+            label={emailing ? 'Preparing email…' : 'Email NCCIA'}
+            icon="mail-outline"
+            loading={emailing}
+            disabled={totalIncluded === 0}
+            onPress={() => {
+              void handleEmail();
+            }}
           />
         </View>
       ) : null}
@@ -122,7 +169,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 110,
+    paddingBottom: 160,
   },
   summaryCard: {
     flexDirection: 'row',
@@ -206,5 +253,6 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     bottom: 14,
+    gap: 8,
   },
 });

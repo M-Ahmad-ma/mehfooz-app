@@ -1,9 +1,17 @@
 import { ncciaSteps, pecaNote, support } from '../data/complaint';
 import { categoryMeta } from '../theme';
-import type { Evidence } from '../types';
+import type { CallRecording, Evidence } from '../types';
 
-import { canonicalEvidenceString } from './canonical';
-import { classifierSourceLabel, formatDate, formatDateRange, formatDateTime, shortHash, sourceLabel } from './format';
+import { canonicalCallString, canonicalEvidenceString } from './canonical';
+import {
+  classifierSourceLabel,
+  formatDate,
+  formatDateRange,
+  formatDateTime,
+  formatDuration,
+  shortHash,
+  sourceLabel,
+} from './format';
 
 function escapeHtml(value: string): string {
   return value
@@ -20,35 +28,48 @@ function languageClass(evidence: Evidence): string {
   return 'script';
 }
 
-export function reportCaseRef(items: Evidence[]): string {
+export function reportCaseRef(items: Evidence[], calls: CallRecording[] = []): string {
   const year = new Date().getFullYear();
-  const earliest = [...items].sort(
-    (a, b) => new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime(),
-  )[0];
-  const marker = earliest?.sha256.slice(0, 6).toUpperCase() ?? 'DEMO';
+  const candidates = [
+    ...items.map((item) => ({ at: new Date(item.receivedAt).getTime(), marker: item.sha256 })),
+    ...calls.map((call) => ({ at: new Date(call.startedAt).getTime(), marker: call.sha256 })),
+  ].sort((a, b) => a.at - b.at);
+  const marker = candidates[0]?.marker.slice(0, 6).toUpperCase() ?? 'DEMO';
   return `MHF-${year}-${marker}`;
 }
 
-export function reportSummary(items: Evidence[]) {
+export function reportSummary(items: Evidence[], calls: CallRecording[] = []) {
   const senders = Array.from(new Set(items.map((item) => item.sender)));
   const categories = Array.from(new Set(items.map((item) => item.category)));
+  const rangeItems = [
+    ...items.map((item) => ({ receivedAt: item.receivedAt })),
+    ...calls.map((call) => ({ receivedAt: call.startedAt })),
+  ];
   return {
     count: items.length,
+    callCount: calls.length,
     senders,
     categories,
-    range: formatDateRange(items),
-    caseRef: reportCaseRef(items),
+    range: formatDateRange(rangeItems),
+    caseRef: reportCaseRef(items, calls),
   };
 }
 
 export type ReportImage = { base64: string; mimeType: string };
 export type ReportImages = Record<string, ReportImage>;
 
-export function buildReportHtml(items: Evidence[], images: ReportImages = {}): string {
+export function buildReportHtml(
+  items: Evidence[],
+  images: ReportImages = {},
+  calls: CallRecording[] = [],
+): string {
   const sorted = [...items].sort(
     (a, b) => new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime(),
   );
-  const summary = reportSummary(sorted);
+  const sortedCalls = [...calls].sort(
+    (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
+  );
+  const summary = reportSummary(sorted, sortedCalls);
   const generatedAt = formatDateTime(new Date().toISOString());
   const categoryList = summary.categories
     .map((category) => categoryMeta[category].label)
@@ -79,6 +100,34 @@ export function buildReportHtml(items: Evidence[], images: ReportImages = {}): s
           <div class="hash">${escapeHtml(item.sha256)}</div>
           ${item.imageSha256 ? `<div class="hash-label">Image SHA-256</div><div class="hash">${escapeHtml(item.imageSha256)}</div>` : ''}
           <div class="canonical">Canonical string: <code>${escapeHtml(canonical)}</code></div>
+        </section>`;
+    })
+    .join('');
+
+  const callsHtml = sortedCalls
+    .map((call, index) => {
+      const canonical = canonicalCallString(call);
+      return `
+        <section class="evidence">
+          <div class="evidence-head">
+            <div>
+              <span class="record">Call ${String(index + 1).padStart(2, '0')}</span>
+              <span class="badge badge-call">CALL</span>
+            </div>
+            <span class="muted">${escapeHtml(formatDateTime(call.startedAt))}</span>
+          </div>
+          <div class="meta-row">
+            <span><strong>Caller:</strong> ${escapeHtml(call.callerNumber)}</span>
+            <span><strong>Duration:</strong> ${escapeHtml(formatDuration(call.durationMs))}</span>
+            <span><strong>Source:</strong> Watchlisted incoming call</span>
+          </div>
+          <div class="hash-label">Vault SHA-256 · sealed ${escapeHtml(formatDateTime(call.addedAt))}</div>
+          <div class="hash">${escapeHtml(call.sha256)}</div>
+          <div class="hash-label">Audio file SHA-256</div>
+          <div class="hash">${escapeHtml(call.audioSha256)}</div>
+          <div class="canonical">Canonical string: <code>${escapeHtml(canonical)}</code></div>
+          <p class="muted">Audio is stored on the phone as a separate file. This PDF records its
+          metadata and hashes; it does not embed the audio.</p>
         </section>`;
     })
     .join('');
@@ -136,6 +185,7 @@ export function buildReportHtml(items: Evidence[], images: ReportImages = {}): s
   .evidence-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
   .record { font-weight: 700; font-size: 11px; margin-right: 6px; }
   .badge { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .badge-call { color: #0F3D33; background: #E3F0EA; }
   .muted { color: #6E7A72; font-size: 9px; }
   .meta-row { display: flex; flex-wrap: wrap; gap: 4px 18px; color: #4B5B53; font-size: 9.5px; margin-bottom: 7px; }
   .evidence-image { display: block; max-width: 100%; max-height: 190px; border-radius: 8px; border: 1px solid #DED5C4; margin: 7px 0; object-fit: contain; }
@@ -165,21 +215,29 @@ export function buildReportHtml(items: Evidence[], images: ReportImages = {}): s
     <div class="cover-grid">
       <div><div class="label">Case reference</div><div class="value">${escapeHtml(summary.caseRef)}</div></div>
       <div><div class="label">Generated</div><div class="value">${escapeHtml(generatedAt)}</div></div>
-      <div><div class="label">Evidence items</div><div class="value">${summary.count}</div></div>
+      <div><div class="label">Message records</div><div class="value">${summary.count}</div></div>
+      <div><div class="label">Call recordings</div><div class="value">${summary.callCount}</div></div>
       <div><div class="label">Categories</div><div class="value">${escapeHtml(categoryList || 'None')}</div></div>
     </div>
   </div>
 
   <h2>Incident summary</h2>
   <div class="summary">
-    ${summary.count} ${summary.count === 1 ? 'message was' : 'messages were'} recorded between
-    ${escapeHtml(summary.range)}. Sender${summary.senders.length === 1 ? '' : 's'}:
-    ${escapeHtml(summary.senders.join(', '))}. Each record below includes the original text, sender,
-    timestamp, automated category and a SHA-256 digest computed on the device at the time of capture.
+    ${summary.count} ${summary.count === 1 ? 'message' : 'messages'} and
+    ${summary.callCount} ${summary.callCount === 1 ? 'call recording' : 'call recordings'} were
+    recorded between ${escapeHtml(summary.range)}.
+    ${summary.senders.length > 0
+      ? `Sender${summary.senders.length === 1 ? '' : 's'}: ${escapeHtml(summary.senders.join(', '))}.`
+      : 'No message senders were included.'}
+    Each message includes the original text, sender, timestamp, automated category and a SHA-256
+    digest computed on the device at the time of capture. Call recordings include the caller
+    number, timestamp, duration and separate file hash.
   </div>
 
-  <h2>Evidence records</h2>
-  ${evidenceHtml || '<p>No evidence selected.</p>'}
+  <h2>Message records</h2>
+  ${evidenceHtml || '<p>No message records selected.</p>'}
+
+  ${sortedCalls.length > 0 ? `<h2>Call recordings</h2>${callsHtml}` : ''}
 
   <h2>How to file a complaint</h2>
   <ol class="steps">${stepHtml}</ol>
@@ -189,6 +247,7 @@ export function buildReportHtml(items: Evidence[], images: ReportImages = {}): s
     <div class="contact-card">
       <div class="label">NCCIA</div>
       <p><strong>Online:</strong> ${escapeHtml(support.ncciaPortal)}<br/>
+      <strong>Email:</strong> ${escapeHtml(support.ncciaEmail)}<br/>
       <strong>Helpline:</strong> ${escapeHtml(support.ncciaHelpline)}<br/>
       <strong>Website:</strong> ${escapeHtml(support.ncciaWebsite)}</p>
       <p>You can also submit the NCCIA complaint proforma at the nearest NCCIA office with this evidence pack.</p>
@@ -206,7 +265,9 @@ export function buildReportHtml(items: Evidence[], images: ReportImages = {}): s
     (<code>mehfooz:v1|record id|sender|timestamp|category|message text</code>).
     Changing any character in the record changes the digest. For shared screenshots, the image
     digest is the SHA-256 of the original image file, and the PDF also contains a thumbnail.
-    The Mehfooz app can recompute and compare the text digest in the evidence vault.
+    For call recordings, the vault digest is computed over the canonical call string shown under
+    each call, and the audio file has its own SHA-256. The Mehfooz app can recompute and compare
+    these digests in the evidence vault.
   </p>
 
   <h2>Legal note</h2>
@@ -230,8 +291,8 @@ export function reportPreviewHashes(items: Evidence[]): string[] {
   return items.slice(0, 3).map((item) => shortHash(item.sha256));
 }
 
-export function reportTitle(items: Evidence[]): string {
-  return `Mehfooz evidence pack · ${reportSummary(items).caseRef}`;
+export function reportTitle(items: Evidence[], calls: CallRecording[] = []): string {
+  return `Mehfooz evidence pack · ${reportSummary(items, calls).caseRef}`;
 }
 
 export { formatDate };

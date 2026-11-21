@@ -2,6 +2,7 @@ export const support = {
   drfNumber: '0800-39393',
   drfDial: '080039393',
   ncciaHelpline: '1799',
+  ncciaEmail: 'helpdesk@nccia.gov.pk',
   ncciaPortal: 'https://complaint.nccia.gov.pk',
   ncciaWebsite: 'https://www.nccia.gov.pk',
   verified: 'November 2026',
@@ -18,7 +19,7 @@ export const ncciaSteps = [
   },
   {
     title: 'File the complaint',
-    body: 'Use the NCCIA online portal (complaint.nccia.gov.pk), call the NCCIA helpline, or submit the complaint proforma at the nearest NCCIA office.',
+    body: 'Use the NCCIA online portal (complaint.nccia.gov.pk), email helpdesk@nccia.gov.pk, call the NCCIA helpline, or submit the complaint proforma at the nearest NCCIA office.',
   },
   {
     title: 'Attach the evidence pack',

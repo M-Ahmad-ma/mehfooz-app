@@ -4,20 +4,26 @@ export type EvalMessage = {
   text: string;
   language: Language;
   label: Category;
+  /** Stable id for v2 rows; v1 rows are assigned one when they are loaded. */
+  id?: string;
+  /** Phenomenon tags used for slice reporting. */
+  tags?: string[];
+  difficulty?: 'easy' | 'medium' | 'hard' | 'legacy';
+  /** Pashto only: whether the text is Arabic script or Romanized. */
+  scriptVariant?: 'arabic' | 'roman';
+  /** Optional note for ambiguous review cases. */
+  notes?: string;
 };
 
 /**
- * Held-out test set. These messages are for measurement only and must not be
- * used as prompt examples or training data. The scripted demo feed shares some
- * phrasing, but the model is not tuned on this test set.
+ * v1 benchmark archive: 160 messages, 32 per category and 40 per language.
+ * Preserved for historical comparison. The current v2 benchmark combines this
+ * set with evalV2Core.ts in evalMessagesV2.ts; run the scripts against v2.
  *
  * Policy: classify the intent directed at the recipient. Quoted/reported
  * speech, news, education, venting and legitimate conditions are safe unless
  * they are aimed at the recipient with harmful intent. Overlaps use the app's
  * precedence: threat > blackmail > sexual > abusive > safe.
- *
- * 160 messages: 32 per category and 40 per language, including hard negatives
- * and code-mixed/adversarial cases.
  */
 export const evalMessages: EvalMessage[] = [
   // safe

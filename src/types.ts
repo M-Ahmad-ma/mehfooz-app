@@ -93,6 +93,43 @@ export type PendingShare = {
   receivedAt: number;
 };
 
+export type CallPermissions = {
+  microphone: boolean;
+  phoneState: boolean;
+  callLog: boolean;
+};
+
+/** Payload emitted by the native call recording service. */
+export type PendingCallRecording = {
+  id: string;
+  callerNumber: string;
+  startedAt: number;
+  endedAt: number;
+  durationMs: number;
+  audioPath: string;
+  audioSha256: string;
+  mimeType: string;
+  fileSize: number;
+};
+
+/** A locally stored watchlisted-call recording. */
+export type CallRecording = {
+  id: string;
+  callerNumber: string;
+  callerLabel?: string;
+  startedAt: string;
+  endedAt: string;
+  durationMs: number;
+  audioPath: string;
+  audioSha256: string;
+  mimeType: string;
+  fileSize: number;
+  sha256: string;
+  addedAt: string;
+  includeInReport: boolean;
+  source: 'call-watchlist';
+};
+
 export type OcrResult = {
   text: string;
   engine: 'mlkit' | 'tesseract' | string;

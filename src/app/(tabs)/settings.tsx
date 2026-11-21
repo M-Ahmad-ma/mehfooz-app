@@ -9,10 +9,15 @@ import { SectionLabel } from '@/components/SectionLabel';
 import { SettingsRow } from '@/components/SettingsRow';
 import { geminiModel, isGeminiConfigured } from '@/engine/geminiClassifier';
 import { useAlertNotificationPermission } from '@/hooks/useAlertNotificationPermission';
+import { useCallProtection } from '@/hooks/useCallProtection';
 import { useNotificationAccess } from '@/hooks/useNotificationAccess';
 import { formatDateTime } from '@/lib/format';
 import { tapFeedback } from '@/lib/haptics';
-import { resetNativeCaptureState, setLiveCaptureEnabled } from '@/native/mehfoozNative';
+import {
+  resetNativeCallRecordingState,
+  resetNativeCaptureState,
+  setLiveCaptureEnabled,
+} from '@/native/mehfoozNative';
 import { useStore } from '@/store/useStore';
 import { categoryMeta, colors, fonts, radius } from '@/theme';
 
@@ -23,9 +28,11 @@ export default function SettingsScreen() {
   const liveMode = useStore((state) => state.liveMode);
   const setLiveMode = useStore((state) => state.setLiveMode);
   const corrections = useStore((state) => state.corrections);
+  const watchlist = useStore((state) => state.watchlist);
   const resetDemo = useStore((state) => state.resetDemo);
   const { available, granted, openSettings } = useNotificationAccess();
   const { granted: alertsGranted, request: requestAlerts } = useAlertNotificationPermission();
+  const callProtection = useCallProtection();
 
   const recentCorrections = corrections.slice(0, 3);
 
@@ -33,6 +40,7 @@ export default function SettingsScreen() {
     tapFeedback();
     const performReset = () => {
       resetNativeCaptureState();
+      resetNativeCallRecordingState();
       resetDemo();
     };
 
@@ -176,6 +184,85 @@ export default function SettingsScreen() {
           offline fallback. The app reclassifies when it opens. When Gemini is configured, live and
           background message text plus screenshot transcripts are sent to Google; images and OCR
           stay on the phone.
+        </Text>
+
+        <SectionLabel>Call protection</SectionLabel>
+        <View style={styles.card}>
+          <SettingsRow
+            icon="call-outline"
+            title="Record watchlisted calls"
+            subtitle={
+              !callProtection.available
+                ? 'Requires the installed Android APK.'
+                : callProtection.enabled
+                  ? `Watching ${watchlist.length} ${watchlist.length === 1 ? 'number' : 'numbers'} · visible recording notification`
+                  : 'Records incoming calls from your watchlist after you answer.'
+            }
+            right={
+              <Switch
+                value={callProtection.enabled}
+                disabled={!callProtection.available}
+                onValueChange={(value) => {
+                  tapFeedback();
+                  if (!value) {
+                    callProtection.toggle(false);
+                    return;
+                  }
+                  Alert.alert(
+                    'Enable call recording?',
+                    'Mehfooz will record incoming calls from your watchlist and show a visible notification. Record only calls you are part of, and inform the other person where required. Audio may capture only your side or the room, not the remote caller.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Enable', onPress: () => callProtection.toggle(true) },
+                    ],
+                  );
+                }}
+                trackColor={{ false: colors.sandDeep, true: colors.pine }}
+                thumbColor={colors.sand}
+                ios_backgroundColor={colors.sandDeep}
+              />
+            }
+            divider
+          />
+          <SettingsRow
+            icon="list-outline"
+            title="Call watchlist"
+            subtitle={
+              watchlist.length > 0
+                ? `${watchlist.length} ${watchlist.length === 1 ? 'number' : 'numbers'} watched`
+                : 'Add a number to watch'
+            }
+            right={<Ionicons name="chevron-forward" size={17} color={colors.muted} />}
+            onPress={() => router.push('/call-watchlist')}
+            divider
+          />
+          <SettingsRow
+            icon="key-outline"
+            title="Call permissions"
+            subtitle={
+              callProtection.permissionsGranted
+                ? 'Microphone, phone state and call log allowed.'
+                : 'Microphone, phone state and call log are required.'
+            }
+            right={
+              <Text
+                style={[
+                  styles.accessStatus,
+                  callProtection.permissionsGranted && styles.accessOn,
+                ]}>
+                {callProtection.permissionsGranted ? 'ON' : 'OFF'}
+              </Text>
+            }
+            onPress={
+              callProtection.permissionsGranted ? undefined : callProtection.requestPermissions
+            }
+          />
+        </View>
+        <Text style={styles.smallNote}>
+          Call recording is opt-in and shows a visible notification. Android may allow only
+          microphone or room audio, not both sides of a cellular call; test on this device. Record
+          only calls you are part of and inform the other person where required. Recordings stay
+          local and are sealed in the evidence vault.
         </Text>
 
         <SectionLabel>Privacy</SectionLabel>

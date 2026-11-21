@@ -1,8 +1,13 @@
-import type { Evidence } from '../types';
+import type { CallRecording, Evidence } from '../types';
 
 export type HashableEvidence = Pick<
   Evidence,
   'id' | 'sender' | 'receivedAt' | 'category' | 'text'
+>;
+
+export type HashableCall = Pick<
+  CallRecording,
+  'id' | 'callerNumber' | 'startedAt' | 'durationMs' | 'audioSha256'
 >;
 
 /**
@@ -17,5 +22,16 @@ export function canonicalEvidenceString(evidence: HashableEvidence): string {
     evidence.receivedAt,
     evidence.category,
     evidence.text,
+  ].join('|');
+}
+
+export function canonicalCallString(call: HashableCall): string {
+  return [
+    'mehfooz:call:v1',
+    call.id,
+    call.callerNumber,
+    call.startedAt,
+    String(call.durationMs),
+    call.audioSha256,
   ].join('|');
 }

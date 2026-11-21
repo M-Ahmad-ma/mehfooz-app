@@ -6,9 +6,12 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { CallRecordingCard } from '@/components/CallRecordingCard';
 import { CategoryChip } from '@/components/CategoryChip';
 import { EmptyState } from '@/components/EmptyState';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { support } from '@/data/complaint';
+import { useNcciaEmail } from '@/hooks/useNcciaEmail';
 import { formatDate } from '@/lib/format';
 import { successFeedback, warnFeedback } from '@/lib/haptics';
 import { generateAndShareReport } from '@/lib/pdf';
@@ -21,25 +24,32 @@ const INCLUDED_ITEMS = [
   'Original text, sender and timestamp for every record',
   'Full SHA-256 digest and canonical string per record',
   'Screenshot thumbnail and image SHA-256 for shared images',
-  'NCCIA complaint steps, portal and helpline',
+  'Call recordings with caller, duration and audio SHA-256',
+  'NCCIA complaint steps, portal, email and helpline',
   'Integrity note, PECA reference and legal disclaimer',
 ];
 
 export default function ReportScreen() {
   const router = useRouter();
   const evidence = useStore((state) => state.evidence);
+  const callRecordings = useStore((state) => state.callRecordings);
   const toggleInclude = useStore((state) => state.toggleInclude);
+  const toggleCallInclude = useStore((state) => state.toggleCallInclude);
 
   const [generating, setGenerating] = useState(false);
+  const { emailing, send: sendToNccia } = useNcciaEmail();
 
   const included = evidence.filter((item) => item.includeInReport);
-  const summary = reportSummary(included);
+  const includedCalls = callRecordings.filter((item) => item.includeInReport);
+  const totalIncluded = included.length + includedCalls.length;
+  const summary = reportSummary(included, includedCalls);
+  const busy = generating || emailing;
 
   async function handleGenerate() {
-    if (included.length === 0 || generating) return;
+    if (totalIncluded === 0 || busy) return;
     setGenerating(true);
     try {
-      await generateAndShareReport(included);
+      await generateAndShareReport(included, includedCalls);
       successFeedback();
     } catch (error) {
       warnFeedback();
@@ -53,6 +63,11 @@ export default function ReportScreen() {
     }
   }
 
+  async function handleEmail() {
+    if (totalIncluded === 0 || busy) return;
+    await sendToNccia(included, includedCalls);
+  }
+
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <ScreenHeader
@@ -62,11 +77,11 @@ export default function ReportScreen() {
         subtitle="Build a complaint-ready PDF"
       />
 
-      {evidence.length === 0 ? (
+      {evidence.length === 0 && callRecordings.length === 0 ? (
         <EmptyState
           icon="document-text-outline"
           title="Nothing to report yet"
-          body="Shielded messages are sealed in the evidence vault. Add one to build a pack."
+          body="Shielded messages and watchlisted call recordings are sealed in the evidence vault."
           actionLabel="Open the demo feed"
           onAction={() => router.navigate('/')}
         />
@@ -95,8 +110,12 @@ export default function ReportScreen() {
                   <Text style={styles.coverValue}>{summary.caseRef}</Text>
                 </View>
                 <View style={styles.coverCell}>
-                  <Text style={styles.coverLabel}>RECORDS</Text>
+                  <Text style={styles.coverLabel}>MESSAGES</Text>
                   <Text style={styles.coverValue}>{summary.count}</Text>
+                </View>
+                <View style={styles.coverCell}>
+                  <Text style={styles.coverLabel}>CALLS</Text>
+                  <Text style={styles.coverValue}>{summary.callCount}</Text>
                 </View>
               </View>
 
@@ -155,11 +174,32 @@ export default function ReportScreen() {
               })}
             </View>
 
-            {included.length === 0 ? (
+            {callRecordings.length > 0 ? (
+              <>
+                <View style={styles.sectionRow}>
+                  <Text style={styles.sectionTitle}>Call recordings</Text>
+                  <Text style={styles.sectionMeta}>
+                    {includedCalls.length} of {callRecordings.length}
+                  </Text>
+                </View>
+                {callRecordings.map((recording) => (
+                  <CallRecordingCard
+                    key={recording.id}
+                    recording={recording}
+                    onPress={() =>
+                      router.push({ pathname: '/call/[id]', params: { id: recording.id } })
+                    }
+                    onToggleInclude={() => toggleCallInclude(recording.id)}
+                  />
+                ))}
+              </>
+            ) : null}
+
+            {totalIncluded === 0 ? (
               <View style={styles.warning}>
                 <Ionicons name="alert-circle-outline" size={15} color={colors.amber} />
                 <Text style={styles.warningText}>
-                  Select at least one record to generate the pack.
+                  Select at least one message or call recording to generate the pack.
                 </Text>
               </View>
             ) : null}
@@ -191,15 +231,29 @@ export default function ReportScreen() {
               label={
                 generating
                   ? 'Generating PDF…'
-                  : `Generate PDF · ${included.length} ${included.length === 1 ? 'record' : 'records'}`
+                  : `Generate PDF · ${totalIncluded} ${totalIncluded === 1 ? 'item' : 'items'}`
               }
               icon="document-text-outline"
               loading={generating}
-              disabled={included.length === 0}
+              disabled={totalIncluded === 0 || emailing}
               onPress={() => {
                 void handleGenerate();
               }}
             />
+            <Button
+              variant="secondary"
+              label={emailing ? 'Preparing email…' : 'Send to NCCIA'}
+              icon="mail-outline"
+              loading={emailing}
+              disabled={totalIncluded === 0 || generating}
+              onPress={() => {
+                void handleEmail();
+              }}
+            />
+            <Text style={styles.footerNote}>
+              Opens your email app with the PDF and selected call audio attached to{' '}
+              {support.ncciaEmail}. You review and send.
+            </Text>
           </View>
         </>
       )}
@@ -214,7 +268,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 108,
+    paddingBottom: 196,
   },
   cover: {
     borderRadius: radius.xl,
@@ -405,5 +459,14 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     bottom: 14,
+    gap: 8,
+  },
+  footerNote: {
+    paddingHorizontal: 8,
+    fontFamily: fonts.regular,
+    fontSize: 9,
+    lineHeight: 13,
+    color: colors.muted,
+    textAlign: 'center',
   },
 });

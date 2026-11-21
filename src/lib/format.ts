@@ -43,6 +43,15 @@ export function timeAgo(iso: string): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
+export function formatDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0
+    ? `${minutes}:${String(seconds).padStart(2, '0')}`
+    : `0:${String(seconds).padStart(2, '0')}`;
+}
+
 export function shortHash(hash: string, edge = 6): string {
   if (!hash) return '';
   if (hash.length <= edge * 2 + 1) return hash;

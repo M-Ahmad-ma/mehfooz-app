@@ -9,56 +9,81 @@
 7    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 7-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:2:3-75
 7-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:2:20-72
-8
-9    <application>
-9-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:4:3-28:17
-10        <service
-10-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:5:5-13:15
-11            android:name="expo.modules.mehfooznative.MehfoozNotificationService"
-11-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:6:7-75
-12            android:exported="true"
-12-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:7:7-30
-13            android:label="Mehfooz shield"
-13-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:8:7-37
-14            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
-14-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:9:7-81
-15            <intent-filter>
-15-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:10:7-12:23
-16                <action android:name="android.service.notification.NotificationListenerService" />
-16-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:11:9-91
-16-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:11:17-88
-17            </intent-filter>
-18        </service>
-19
-20        <activity
-20-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:15:5-27:16
-21            android:name="expo.modules.mehfooznative.ShareActivity"
-21-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:16:7-62
-22            android:excludeFromRecents="true"
-22-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:18:7-40
-23            android:exported="true"
-23-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:17:7-30
-24            android:launchMode="singleTop"
-24-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:20:7-37
-25            android:noHistory="true"
-25-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:19:7-31
-26            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
-26-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:21:7-66
-27            <intent-filter>
-27-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:22:7-26:23
-28                <action android:name="android.intent.action.SEND" />
-28-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:23:9-61
-28-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:23:17-58
+8    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+8-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:3:3-69
+8-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:3:20-66
+9    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+9-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:4:3-73
+9-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:4:20-70
+10    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+10-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:5:3-70
+10-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:5:20-67
+11    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+11-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:6:3-75
+11-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:6:20-72
+12    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+12-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:7:3-86
+12-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:7:20-83
+13
+14    <application>
+14-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:9:3-39:17
+15        <service
+15-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:10:5-18:15
+16            android:name="expo.modules.mehfooznative.MehfoozNotificationService"
+16-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:11:7-75
+17            android:exported="true"
+17-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:12:7-30
+18            android:label="Mehfooz shield"
+18-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:13:7-37
+19            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+19-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:14:7-81
+20            <intent-filter>
+20-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:15:7-17:23
+21                <action android:name="android.service.notification.NotificationListenerService" />
+21-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:16:9-91
+21-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:16:17-88
+22            </intent-filter>
+23        </service>
+24        <service
+24-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:20:5-24:38
+25            android:name="expo.modules.mehfooznative.CallRecordingService"
+25-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:21:7-69
+26            android:exported="false"
+26-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:22:7-31
+27            android:foregroundServiceType="microphone"
+27-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:23:7-49
+28            android:stopWithTask="false" />
+28-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:24:7-35
 29
-30                <category android:name="android.intent.category.DEFAULT" />
-30-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:24:9-68
-30-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:24:19-65
-31
-32                <data android:mimeType="image/*" />
-32-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:25:9-44
-32-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:25:15-41
-33            </intent-filter>
-34        </activity>
-35    </application>
-36
-37</manifest>
+30        <activity
+30-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:26:5-38:16
+31            android:name="expo.modules.mehfooznative.ShareActivity"
+31-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:27:7-62
+32            android:excludeFromRecents="true"
+32-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:29:7-40
+33            android:exported="true"
+33-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:28:7-30
+34            android:launchMode="singleTop"
+34-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:31:7-37
+35            android:noHistory="true"
+35-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:30:7-31
+36            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+36-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:32:7-66
+37            <intent-filter>
+37-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:33:7-37:23
+38                <action android:name="android.intent.action.SEND" />
+38-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:34:9-61
+38-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:34:17-58
+39
+40                <category android:name="android.intent.category.DEFAULT" />
+40-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:35:9-68
+40-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:35:19-65
+41
+42                <data android:mimeType="image/*" />
+42-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:36:9-44
+42-->/home/muhammad-ahmad/Desktop/projects/mehfoozPrototype/modules/mehfooz-native/android/src/main/AndroidManifest.xml:36:15-41
+43            </intent-filter>
+44        </activity>
+45    </application>
+46
+47</manifest>

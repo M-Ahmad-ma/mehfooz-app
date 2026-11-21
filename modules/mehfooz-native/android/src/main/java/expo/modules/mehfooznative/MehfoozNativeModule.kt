@@ -10,6 +10,7 @@ import android.os.Looper
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.io.File
 import java.lang.ref.WeakReference
 
 class MehfoozNativeModule : Module() {
@@ -31,6 +32,13 @@ class MehfoozNativeModule : Module() {
         module.sendEvent("onShare", share)
       }
     }
+
+    fun emitCallRecording(payload: Map<String, Any?>) {
+      val module = instance?.get() ?: return
+      Handler(Looper.getMainLooper()).post {
+        module.sendEvent("onCallRecording", payload)
+      }
+    }
   }
 
   private val context: Context
@@ -41,7 +49,7 @@ class MehfoozNativeModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("MehfoozNative")
 
-    Events("onNotification", "onShare")
+    Events("onNotification", "onShare", "onCallRecording")
 
     OnCreate {
       instance = WeakReference(this@MehfoozNativeModule)
@@ -88,6 +96,107 @@ class MehfoozNativeModule : Module() {
           }
         }
       }
+    }
+
+    AsyncFunction("hasCallPermissions") {
+      mapOf(
+        "microphone" to (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED),
+        "phoneState" to (context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED),
+        "callLog" to (context.checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED)
+      )
+    }
+
+    Function("requestCallPermissions") {
+      val activity = appContext.currentActivity
+      if (activity == null) {
+        false
+      } else {
+        val permissions = arrayOf(
+          Manifest.permission.RECORD_AUDIO,
+          Manifest.permission.READ_PHONE_STATE,
+          Manifest.permission.READ_CALL_LOG
+        )
+        val missing = permissions.filter {
+          activity.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isEmpty()) {
+          true
+        } else {
+          activity.requestPermissions(missing.toTypedArray(), 7411)
+          true
+        }
+      }
+    }
+
+    Function("startCallProtection") {
+      val microphone = context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+        PackageManager.PERMISSION_GRANTED
+      val phoneState = context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) ==
+        PackageManager.PERMISSION_GRANTED
+      val callLog = context.checkSelfPermission(Manifest.permission.READ_CALL_LOG) ==
+        PackageManager.PERMISSION_GRANTED
+      val notificationsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+        PackageManager.PERMISSION_GRANTED
+      val notifications = notificationsPermission &&
+        context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+
+      if (!microphone || !phoneState || !callLog || !notifications) {
+        false
+      } else {
+        try {
+          CallStore.setProtectionEnabled(context, true)
+          CallRecordingService.start(context)
+          true
+        } catch (_: Exception) {
+          CallStore.setProtectionEnabled(context, false)
+          false
+        }
+      }
+    }
+
+    Function("stopCallProtection") {
+      CallRecordingService.stop(context)
+    }
+
+    AsyncFunction("isCallProtectionEnabled") {
+      CallStore.isProtectionEnabled(context)
+    }
+
+    Function("setCallWatchlist") { numbers: List<String> ->
+      CallStore.setWatchlist(context, numbers)
+    }
+
+    Function("getCallWatchlist") {
+      CallStore.getWatchlist(context).toList()
+    }
+
+    AsyncFunction("getPendingCallRecordings") {
+      CallStore.pending(context)
+    }
+
+    Function("acknowledgeCallRecordings") { ids: List<String> ->
+      CallStore.acknowledge(context, ids)
+    }
+
+    Function("deleteCallRecording") { path: String ->
+      try {
+        val root = context.filesDir.canonicalFile
+        val target = File(path).canonicalFile
+        if (!target.path.startsWith(root.path + File.separator)) {
+          false
+        } else {
+          target.delete()
+        }
+      } catch (_: Exception) {
+        false
+      }
+    }
+
+    Function("resetCallRecordingState") {
+      CallRecordingService.stop(context)
+      CallStore.resetRecordingState(context)
+      CallStore.setWatchlist(context, emptyList<String>())
     }
 
     Function("setLiveCaptureEnabled") { enabled: Boolean ->

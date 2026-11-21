@@ -14,6 +14,9 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+API_PIPELINE.md
+DEMO.md
+
 # debug
 npm-debug.*
 yarn-debug.*

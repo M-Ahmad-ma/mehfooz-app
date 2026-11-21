@@ -85,6 +85,8 @@ export default function RootLayout() {
             <Stack.Screen name="help" />
             <Stack.Screen name="shielded" />
             <Stack.Screen name="shared-screenshot" />
+            <Stack.Screen name="call-watchlist" />
+            <Stack.Screen name="call/[id]" />
           </Stack>
           <IncomingBridge />
         </View>
